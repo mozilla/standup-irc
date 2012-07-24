@@ -1,1 +1,44 @@
-The irc bot to got with http://github.com/rlr/standup
+jumpups-irc
+===========
+
+Summary
+-------
+
+The irc bot to got with [Standup](https://github.com/rlr/standup).
+
+* **Code:** https://github.com/mythmon/jumpups-irc
+* **Issues:** https://github.com/mythmon/jumpups-irc/issues
+* **License:** BSD
+
+
+Install
+-------
+
+Clone the repository:
+
+    $ git clone https://github.com/mythmon/jumpups-irc
+    $ cd jumpups-irc
+
+Get the dependencies:
+
+    $ npm install .
+
+
+Configure
+---------
+
+Next you need to configure jumpups-irc:
+
+    $ cp config.ini.example config.ini
+    <edit config.ini with your favorite editor>
+
+There are comments in the config file regarding the various
+properties.
+
+
+Run
+---
+
+After you've configured it, you can run it like this:
+
+    $ node jumpups-irc.js
