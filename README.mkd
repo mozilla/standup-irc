@@ -1,0 +1,1 @@
+The irc bot to got with http://github.com/rlr/standup
