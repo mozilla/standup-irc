@@ -1,6 +1,7 @@
 var irc = require('irc');
 var http = require('http');
 var events = require('events');
+var winston = require('winston');
 
 var _ = require('underscore');
 var options = require('nomnom').opts({
@@ -15,85 +16,108 @@ var inireader = new require('inireader').IniReader(options.config);
 // Default configs
 var DEFAULTS = {
     irc: {
-        ircnick: 'jumpups',
+        ircnick: 'jumpups'
     },
     jumpups: {
         port: 80
+    },
+    log: {
+        console: true,
+        file: null
     }
-}
+};
 
 inireader.load();
 var CONFIG = inireader.getBlock();
 CONFIG = _.extend({}, DEFAULTS, CONFIG);
 
+var transports = [];
+if (CONFIG.log.file) {
+    transports.push(new (winston.transports.File)({ filename: CONFIG.log.file }));
+}
+if (CONFIG.log.console) {
+    transports.push(new (winston.transports.Console)());
+}
+var logger = new (winston.Logger)({
+    transports: transports
+});
+
 // This regex matches valid IRC nicks.
-var NICKRE = /[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*/;
+var NICK_RE = /[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*/;
+var TARGET_MSG_RE = new RegExp('^(?:(' + NICK_RE.source + ')[:,]\\s*)?(.*)$');
 
 /********** IRC Client **********/
 
 var client = new irc.Client(CONFIG.irc.host, CONFIG.irc.nick, {
-    channels: CONFIG.irc.channels.split(','),
+    channels: CONFIG.irc.channels.split(',')
 });
-client.on('connect', function(err) {
-    console.log('Connected.');
+client.on('connect', function() {
+    logger.info('Connected to irc server.');
 });
 
+// Handle errors by dumping them to logging.
 client.on('error', function(err) {
     // Error 421 comes up a lot on Mozilla servers, but isn't a problem.
-    if (err.rawCommand != '421') {
+    if (err.rawCommand !== '421') {
         return;
     }
 
-    console.log(err);
+    logger.error(err);
     if (err.hasOwnProperty('stack')) {
-        console.log(err.stack);
+        logger.error(err.stack);
     }
 });
 
-client.on('message', function(from, to, msg) {
-    var target;
+/* Receive, parse, and handle messages from IRC.
+ * - `user`: The nick of the user that send the message.
+ * - `channel`: The channel the message was received in. Note, this might not be
+ *   a real channel, because it could be a PM. But this function ignores
+ *   those messages anyways.
+ * - `msg`: The text of the message sent.
+ */
+client.on('message', function(user, channel, msg) {
+    var target, match;
 
-    // Don't talk to myself.
-    if (from == CONFIG.irc.nick) {
-        return;
-    }
-    // Ignore non-channel messages (like PMs)
-    if (to[0] != '#') {
-        return;
-    }
-    match = new RegExp('^(?:(' + NICKRE.source + ')[:,]\s*)?(.*)$').exec(msg);
-    if (!match) {
-        // I don't know how this would possible fail, but...
-        return;
-    }
+    match = TARGET_MSG_RE.exec(msg);
+     // This shouldn't happen, but bail out if it does, just in case.
+    if (!match) { return; }
+
     target = match[1];
     msg = match[2].trim();
-    // Only do statuses when targeted at me.
-    if (target != CONFIG.irc.nick) {
+
+    // Don't talk to myself, don't list to PMs, and only speak when spoken to.
+    if (user === CONFIG.irc.nick || channel[0] !== '#' || target !== CONFIG.irc.nick) {
         return;
     }
-    var result = submitStatus(from, to, msg);
+
+    var result = submitStatus(user, channel, msg);
+    // Status was submitted correctly.
     result.on('ok', function(data) {
-        client.say(to, 'Ok, submitted status #' + data.id);
+        client.say(channel, 'Ok, submitted status #' + data.id);
     });
+    // There was a problem submitting the status.
     result.on('error', function(data) {
-        client.say(to, 'Uh oh, something went wrong.');
-        console.log(data);
+        client.say(channel, 'Uh oh, something went wrong.');
+        logger.error('Problem adding status: ' + data);
     });
 });
 
-function submitStatus(irc_handle, irc_channel, content, callback) {
-    var post_data = {
+/* Submit a status message to the web service.
+ * - `irc_handle`: The nick of the user that sent this status.
+ * - `irc_channel`: The channel this status originated from.
+ * - `content`: The text of the status.
+ */
+function submitStatus(irc_handle, irc_channel, content) {
+    var body = JSON.stringify({
         irc_handle: irc_handle,
         irc_channel: irc_channel.substr(1),
         content: content,
-        api_key: CONFIG.jumpups.api_key,
-    };
-    var body = JSON.stringify(post_data);
+        api_key: CONFIG.jumpups.api_key
+    });
     var options = {
         host: CONFIG.jumpups.host,
         port: CONFIG.jumpups.port,
-        path: '/status',
+        path: '/api/v1/status/',
         method: 'POST',
         headers: {
             'content-type': 'application/json',
@@ -102,24 +126,29 @@ function submitStatus(irc_handle, irc_channel, content, callback) {
     };
 
     var emitter = new events.EventEmitter();
-
-    var req = http.request(options, function(res) {
-        var resp_data = "";
-        res.on('data', function(chunk) {
-            resp_data += chunk;
+    // Make the request
+    try {
+        var req = http.request(options, function(res) {
+            var resp_data = "";
+            // Read data as it comes in
+            res.on('data', function(chunk) {
+                resp_data += chunk;
+            });
+            // When we have received the entire response
+            res.on('end', function() {
+                var json = JSON.parse(resp_data);
+                if (res.statusCode === 200) {
+                    emitter.emit('ok', json);
+                } else {
+                    emitter.emit('error', json);
+                }
+            });
         });
-        res.on('end', function() {
-            var json = JSON.parse(resp_data);
-            if (res.statusCode == 200) {
-                emitter.emit('ok', json);
-            } else {
-                emitter.emit('error', json);
-            }
-        });
-    });
+    } catch(e) {
+        emitter.emit('error', String(e));
+    }
 
-    req.write(JSON.stringify(post_data));
-    req.end();
+    req.end(body);
 
     return emitter;
 }

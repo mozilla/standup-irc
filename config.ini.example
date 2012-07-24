@@ -1,9 +1,12 @@
-[jumpup]
+[jumpups]
 api_key = qwertyuiopasdfghjklzxcvbnm1234567890
 host = example.com
 port = 8080
 
 [irc]
-host: irc.freenode.net
-channels: #example,#example-dev
-nick: jumpups
+host = irc.freenode.net
+channels = #example,#example-dev
+nick = jumpups
+
+[log]
+console = no
