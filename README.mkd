@@ -30,7 +30,8 @@ Configure
 Next you need to configure jumpups-irc:
 
     $ cp config.ini.example config.ini
-    <edit config.ini with your favorite editor>
+
+Now edit config.ini with your favorite editor.
 
 There are comments in the config file regarding the various
 properties.
@@ -42,3 +43,7 @@ Run
 After you've configured it, you can run it like this:
 
     $ node jumpups-irc.js
+
+Alternatively, you can run this by specifying the config file explicitly:
+
+    $ node jumpups-irc.js --config=/path/to/config.ini

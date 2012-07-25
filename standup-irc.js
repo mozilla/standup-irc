@@ -16,9 +16,9 @@ var inireader = new require('inireader').IniReader(options.config);
 // Default configs
 var DEFAULTS = {
     irc: {
-        ircnick: 'jumpups'
+        ircnick: 'standup'
     },
-    jumpups: {
+    standup: {
         port: 80
     },
     log: {
@@ -124,11 +124,11 @@ function submitStatus(irc_handle, irc_channel, content) {
         user: canonicalUsername(irc_handle),
         project: irc_channel.substr(1),
         content: content,
-        api_key: CONFIG.jumpups.api_key
+        api_key: CONFIG.standup.api_key
     });
     var options = {
-        host: CONFIG.jumpups.host,
-        port: CONFIG.jumpups.port,
+        host: CONFIG.standup.host,
+        port: CONFIG.standup.port,
         path: '/api/v1/status/',
         method: 'POST',
         headers: {

@@ -1,12 +1,43 @@
-[jumpups]
+[standup]
+
+# The api_key for pushing status items to the standup server.
+# e.g. api_key = ou812ad9d0fjsdfkj
 api_key = qwertyuiopasdfghjklzxcvbnm1234567890
+
+# The standup server host.
+# e.g. host = example.com
 host = example.com
+
+# The port number to push to.
+# e.g. port = 80
 port = 8080
 
+
 [irc]
+
+# The irc server to connect to.
+# e.g. host = irc.freenode.net
 host = irc.freenode.net
+
+# Comma-delimited list of channels to join.
+# e.g. channels = #example
+#      channels = #example,#example2
 channels = #example,#example-dev
-nick = jumpups
+
+# The irc handle to use for this irc bot.
+# e.g. nick = bob
+nick = standup
+
 
 [log]
-console = no
+
+# Whether (true) or not (false) to log to the console.
+# If you don't want to log to the console, leave this undefined or set it to
+# false.
+# e.g. console = false
+console = true
+
+# If you want to log to a file, this is the full path to the log file. If you
+# don't want to log to a file, leave this undefined or empty.
+# e.g. file = /path/to/file.log
+# file =
