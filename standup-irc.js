@@ -98,7 +98,7 @@ client.on('message', function(user, channel, msg) {
     // There was a problem submitting the status.
     result.on('error', function(data) {
         client.say(channel, 'Uh oh, something went wrong.');
-        logger.error('Problem adding status: ' + data);
+        logger.error('Problem adding status: ' + JSON.stringify(data));
     });
 });
 
