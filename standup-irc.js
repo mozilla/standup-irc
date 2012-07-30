@@ -109,8 +109,8 @@ client.on('message', function(user, channel, msg) {
  */
 function submitStatus(irc_handle, irc_channel, content) {
     var body = JSON.stringify({
-        irc_handle: irc_handle,
-        irc_channel: irc_channel.substr(1),
+        user: irc_handle,
+        project: irc_channel.substr(1),
         content: content,
         api_key: CONFIG.jumpups.api_key
     });
