@@ -24,16 +24,27 @@ var DEFAULTS = {
     log: {
         console: true,
         file: null
+    },
+    users: {
+        nicks: [],
     }
 };
 
 inireader.load();
 var CONFIG = inireader.getBlock();
+if (CONFIG.users && CONFIG.users.nicks !== undefined) {
+    CONFIG.users.nicks = CONFIG.users.nicks.split(',');
+}
+if (CONFIG.irc && CONFIG.irc.channels !== undefined) {
+    CONFIG.irc.channels = CONFIG.irc.channels.split(',');
+}
 CONFIG = _.extend({}, DEFAULTS, CONFIG);
 
 var transports = [];
 if (CONFIG.log.file) {
-    transports.push(new (winston.transports.File)({ filename: CONFIG.log.file }));
+    transports.push(new (winston.transports.File)({
+        filename: CONFIG.log.file
+    }));
 }
 if (CONFIG.log.console) {
     transports.push(new (winston.transports.Console)());
@@ -49,7 +60,7 @@ var TARGET_MSG_RE = new RegExp('^(?:(' + NICK_RE.source + ')[:,]\\s*)?(.*)$');
 /********** IRC Client **********/
 
 var client = new irc.Client(CONFIG.irc.host, CONFIG.irc.nick, {
-    channels: CONFIG.irc.channels.split(',')
+    channels: CONFIG.irc.channels
 });
 client.on('connect', function() {
     logger.info('Connected to irc server.');
@@ -86,7 +97,8 @@ client.on('message', function(user, channel, msg) {
     msg = match[2].trim();
 
     // Don't talk to myself, don't list to PMs, and only speak when spoken to.
-    if (user === CONFIG.irc.nick || channel[0] !== '#' || target !== CONFIG.irc.nick) {
+    if (user === CONFIG.irc.nick || channel[0] !== '#' ||
+            target !== CONFIG.irc.nick) {
         return;
     }
 
@@ -109,7 +121,7 @@ client.on('message', function(user, channel, msg) {
  */
 function submitStatus(irc_handle, irc_channel, content) {
     var body = JSON.stringify({
-        user: irc_handle,
+        user: canonicalUsername(irc_handle),
         project: irc_channel.substr(1),
         content: content,
         api_key: CONFIG.jumpups.api_key
@@ -124,6 +136,7 @@ function submitStatus(irc_handle, irc_channel, content) {
             'content-length': body.length
         }
     };
+    logger.info(body);
 
     var emitter = new events.EventEmitter();
     // Make the request
@@ -151,4 +164,40 @@ function submitStatus(irc_handle, irc_channel, content) {
     req.end(body);
 
     return emitter;
+}
+
+/* Find a user's canonical username based on `CONFIG.users`.
+ *
+ * If no configured user can be matched, return `username` unmodified.
+ */
+function canonicalUsername(irc_nick) {
+    var matches = [];
+    _.each(CONFIG.users.nicks, function(user) {
+        if (isPrefix(user, irc_nick)) {
+            matches.push(user);
+        }
+    });
+    if (matches.length === 0) {
+        return irc_nick;
+    }
+    // Sort by length.
+    matches.sort(function(a, b) {
+        return b.length - a.length;
+    });
+    // Grab the longest.
+    return matches[0];
+}
+
+// Check if `a` is a prefix of `b`.
+function isPrefix(a, b) {
+    var i;
+    if (a.length > b.length) {
+        return false;
+    }
+    for (i = 0; i < a.length; i++) {
+        if (a.charAt(i) !== b.charAt(i)) {
+            return false;
+        }
+    }
+    return true;
 }
