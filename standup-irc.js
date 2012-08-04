@@ -1,12 +1,11 @@
 var _ = require('underscore');
 var irc = require('irc');
-var http = require('http');
-var events = require('events');
 var winston = require('winston');
 var nomnom = require('nomnom');
 var inireader = require('inireader');
 
 var utils = require('./utils');
+var api = require('./api');
 
 var options = nomnom.opts({
     config: {
@@ -36,7 +35,8 @@ var DEFAULTS = {
 };
 
 optionsini.load();
-var CONFIG = optionsini.getBlock();
+// Global config.
+CONFIG = optionsini.getBlock();
 if (CONFIG.users && CONFIG.users.nicks !== undefined) {
     CONFIG.users.nicks = CONFIG.users.nicks.split(',');
 }
@@ -54,7 +54,8 @@ if (CONFIG.log.file) {
 if (CONFIG.log.console) {
     transports.push(new (winston.transports.Console)());
 }
-var logger = new (winston.Logger)({
+// Global logger.
+logger = new (winston.Logger)({
     transports: transports
 });
 
@@ -114,74 +115,48 @@ client.on('message', function(user, channel, msg) {
         var cmd = commands[cmd_name] || commands['default'];
         cmd(user, channel, msg, args);
     } else {
-        var result = submitStatus(user, channel, msg);
-        // Status was submitted correctly.
-        result.on('ok', function(data) {
-            client.say(channel, 'Ok, submitted status #' + data.id);
-        });
-        // There was a problem submitting the status.
-        result.on('error', function(data) {
-            client.say(channel, 'Uh oh, something went wrong.');
-            logger.error('Problem adding status: ' + JSON.stringify(data));
-        });
+        // If they didn't ask for a specific command, post a status.
+        commands.status(user, channel, msg, msg);
     }
 });
 
 var commands = {
-    ping: function(user, channel, message) {
+    /* Simple presence check. */
+    ping: function(user, channel, message, args) {
         client.say(channel, "Pong!");
     },
+
+    /* Create a status. */
+    status: function(user, channel, message, args) {
+        if (channel.charAt(0) == '#') {
+            channel = channel.slice(1);
+        }
+        var ret = api.status.create(user, channel, args);
+        ret.on('ok', function(data) {
+            client.say(channel, 'Ok, submitted status #' + data.id);
+        });
+        ret.on('error', function(data) {
+            client.say(channel, 'Uh oh, something went wrong.');
+            logger.error('Problem adding status: ' + JSON.stringify(data));
+        });
+    },
+
+    /* Delete a status by id number. */
+    'delete': function(user, channel, message, args) {
+        if (args.charAt(0) === '#') {
+            args = args.slice(1);
+        }
+        var ret = api.status.delete_(args);
+        ret.on('ok', function(data) {
+            client.say(channel, 'Ok, deleted status #' + args);
+        });
+        ret.on('error', function(data) {
+            client.say(channel, "I'm a failure, I couldn't do it.");
+        });
+    },
+
+    /* The default action. Return an error. */
     'default': function(user, channel, message) {
         client.say(channel, user + ": Wait, what?");
     }
 };
-
-/* Submit a status message to the web service.
- * - `irc_handle`: The nick of the user that sent this status.
- * - `irc_channel`: The channel this status originated from.
- * - `content`: The text of the status.
- */
-function submitStatus(irc_handle, irc_channel, content) {
-    var body = JSON.stringify({
-        user: utils.canonicalUsername(irc_handle),
-        project: irc_channel.substr(1),
-        content: content,
-        api_key: CONFIG.standup.api_key
-    });
-    var options = {
-        host: CONFIG.standup.host,
-        port: CONFIG.standup.port,
-        path: '/api/v1/status/',
-        method: 'POST',
-        headers: {
-            'content-type': 'application/json',
-            'content-length': body.length
-        }
-    };
-    logger.info(body);
-
-    var emitter = new events.EventEmitter();
-    // Make the request
-    var req = http.request(options, function(res) {
-        var resp_data = "";
-        // Read data as it comes in
-        res.on('data', function(chunk) {
-            resp_data += chunk;
-        });
-        // When we have received the entire response
-        res.on('end', function() {
-            var json = JSON.parse(resp_data);
-            if (res.statusCode === 200) {
-                emitter.emit('ok', json);
-            } else {
-                emitter.emit('error', json);
-            }
-        });
-    });
-    req.on('error', function(e) {
-        emitter.emit('error', String(e));
-    });
-    req.end(body);
-
-    return emitter;
-}
