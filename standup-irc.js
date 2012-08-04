@@ -1,17 +1,22 @@
+var _ = require('underscore');
 var irc = require('irc');
 var http = require('http');
 var events = require('events');
 var winston = require('winston');
+var nomnom = require('nomnom');
+var inireader = require('inireader');
 
-var _ = require('underscore');
-var options = require('nomnom').opts({
+var utils = require('./utils');
+
+var options = nomnom.opts({
     config: {
         string: '-c CONFIG, --config=CONFIG',
-        default: 'config.ini',
+        'default': 'config.ini',
         help: 'What config file to use. Default: config.ini.'
     }
 }).parseArgs();
-var inireader = new require('inireader').IniReader(options.config);
+
+var optionsini = inireader.IniReader(options.config);
 
 // Default configs
 var DEFAULTS = {
@@ -26,12 +31,12 @@ var DEFAULTS = {
         file: null
     },
     users: {
-        nicks: [],
+        nicks: []
     }
 };
 
-inireader.load();
-var CONFIG = inireader.getBlock();
+optionsini.load();
+var CONFIG = optionsini.getBlock();
 if (CONFIG.users && CONFIG.users.nicks !== undefined) {
     CONFIG.users.nicks = CONFIG.users.nicks.split(',');
 }
@@ -54,7 +59,7 @@ var logger = new (winston.Logger)({
 });
 
 // This regex matches valid IRC nicks.
-var NICK_RE = /[a-z_\-\[\]\\^{}|`][a-z0-9_\-\[\]\\^{}|`]*/;
+var NICK_RE = /[a-z_\-\[\]\\{}|`][a-z0-9_\-\[\]\\{}|`]*/;
 var TARGET_MSG_RE = new RegExp('^(?:(' + NICK_RE.source + ')[:,]\\s*)?(.*)$');
 
 /********** IRC Client **********/
@@ -121,7 +126,7 @@ client.on('message', function(user, channel, msg) {
  */
 function submitStatus(irc_handle, irc_channel, content) {
     var body = JSON.stringify({
-        user: canonicalUsername(irc_handle),
+        user: utils.canonicalUsername(irc_handle),
         project: irc_channel.substr(1),
         content: content,
         api_key: CONFIG.standup.api_key
@@ -140,64 +145,26 @@ function submitStatus(irc_handle, irc_channel, content) {
 
     var emitter = new events.EventEmitter();
     // Make the request
-    try {
-        var req = http.request(options, function(res) {
-            var resp_data = "";
-            // Read data as it comes in
-            res.on('data', function(chunk) {
-                resp_data += chunk;
-            });
-            // When we have received the entire response
-            res.on('end', function() {
-                var json = JSON.parse(resp_data);
-                if (res.statusCode === 200) {
-                    emitter.emit('ok', json);
-                } else {
-                    emitter.emit('error', json);
-                }
-            });
+    var req = http.request(options, function(res) {
+        var resp_data = "";
+        // Read data as it comes in
+        res.on('data', function(chunk) {
+            resp_data += chunk;
         });
-    } catch(e) {
+        // When we have received the entire response
+        res.on('end', function() {
+            var json = JSON.parse(resp_data);
+            if (res.statusCode === 200) {
+                emitter.emit('ok', json);
+            } else {
+                emitter.emit('error', json);
+            }
+        });
+    });
+    req.on('error', function(e) {
         emitter.emit('error', String(e));
-    }
-
+    });
     req.end(body);
 
     return emitter;
-}
-
-/* Find a user's canonical username based on `CONFIG.users`.
- *
- * If no configured user can be matched, return `username` unmodified.
- */
-function canonicalUsername(irc_nick) {
-    var matches = [];
-    _.each(CONFIG.users.nicks, function(user) {
-        if (isPrefix(user, irc_nick)) {
-            matches.push(user);
-        }
-    });
-    if (matches.length === 0) {
-        return irc_nick;
-    }
-    // Sort by length.
-    matches.sort(function(a, b) {
-        return b.length - a.length;
-    });
-    // Grab the longest.
-    return matches[0];
-}
-
-// Check if `a` is a prefix of `b`.
-function isPrefix(a, b) {
-    var i;
-    if (a.length > b.length) {
-        return false;
-    }
-    for (i = 0; i < a.length; i++) {
-        if (a.charAt(i) !== b.charAt(i)) {
-            return false;
-        }
-    }
-    return true;
 }
