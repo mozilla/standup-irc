@@ -106,18 +106,35 @@ client.on('message', function(user, channel, msg) {
             target !== CONFIG.irc.nick) {
         return;
     }
-
-    var result = submitStatus(user, channel, msg);
-    // Status was submitted correctly.
-    result.on('ok', function(data) {
-        client.say(channel, 'Ok, submitted status #' + data.id);
-    });
-    // There was a problem submitting the status.
-    result.on('error', function(data) {
-        client.say(channel, 'Uh oh, something went wrong.');
-        logger.error('Problem adding status: ' + JSON.stringify(data));
-    });
+    var cond = msg.charAt(0) === '!';
+    if (cond) {
+        // msg = "!cmd arg1 arg2 arg3"
+        var cmd_name = msg.split(' ')[0].slice(1);
+        var args = msg.split(' ').slice(1).join(' ');
+        var cmd = commands[cmd_name] || commands['default'];
+        cmd(user, channel, msg, args);
+    } else {
+        var result = submitStatus(user, channel, msg);
+        // Status was submitted correctly.
+        result.on('ok', function(data) {
+            client.say(channel, 'Ok, submitted status #' + data.id);
+        });
+        // There was a problem submitting the status.
+        result.on('error', function(data) {
+            client.say(channel, 'Uh oh, something went wrong.');
+            logger.error('Problem adding status: ' + JSON.stringify(data));
+        });
+    }
 });
+
+var commands = {
+    ping: function(user, channel, message) {
+        client.say(channel, "Pong!");
+    },
+    'default': function(user, channel, message) {
+        client.say(channel, user + ": Wait, what?");
+    }
+};
 
 /* Submit a status message to the web service.
  * - `irc_handle`: The nick of the user that sent this status.
