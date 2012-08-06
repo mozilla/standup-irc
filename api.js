@@ -28,7 +28,7 @@ exports.status = {
             user: utils.canonicalUsername(user),
             api_key: CONFIG.standup.api_key
         };
-        return utils.request('/api/v1/status/' + id, 'DELETE', data);
+        return utils.request('/api/v1/status/' + id + '/', 'DELETE', data);
     }
 };
 

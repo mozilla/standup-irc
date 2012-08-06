@@ -2,7 +2,6 @@ var _ = require('underscore');
 var http = require('http');
 var events = require('events');
 
-
 /* Find a user's canonical username based on `canonicalNicks`.
  *
  * If no configured user can be matched, return `ircNick` unmodified.
@@ -41,7 +40,7 @@ this.isPrefix = function(a, b) {
 };
 
 
-this.request = function(path, method, data, emitter) {
+function request(path, method, data, emitter) {
     if (data === undefined) {
         data = {};
     }
@@ -73,7 +72,7 @@ this.request = function(path, method, data, emitter) {
                 var json = JSON.parse(resp_data);
                 emitter.emit('ok', json);
             } else if (res.statusCode === 301) {
-                this.request(res.headers.Location, method, data, emitter);
+                request(res.headers.location, method, data, emitter);
             } else {
                 emitter.emit('error', res.statusCode, resp_data);
             }
@@ -86,3 +85,4 @@ this.request = function(path, method, data, emitter) {
 
     return emitter;
 }
+this.request = request;
