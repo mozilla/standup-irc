@@ -115,6 +115,11 @@ client.on('message', function(user, channel, msg) {
         var cmd = commands[cmd_name] || commands['default'];
         cmd(user, channel, msg, args);
     } else {
+        // Special case for botsnack
+        if (msg.toLowerCase().trim() === 'botsnack') {
+            commands.botsnack(user, channel, msg, []);
+            return;
+        }
         // If they didn't ask for a specific command, post a status.
         commands.status(user, channel, msg, [channel, msg]);
     }
@@ -156,6 +161,18 @@ var commands = {
             }
             console.log(data);
         });
+    },
+
+    'botsnack': function(user, channel, message, args) {
+        var responses = [
+            'Yummy!',
+            'Thanks, ' + user + '!',
+            'My favorite!',
+            'Can I have another?',
+            'Tasty!'
+        ];
+        var r = Math.floor(Math.random() * responses.length);
+        client.say(channel, responses[r]);
     },
 
     /* The default action. Return an error. */
