@@ -138,8 +138,6 @@ var commands = {
         });
         ret.on('error', function(err, data) {
             client.say(channel, 'Uh oh, something went wrong.');
-            logger.error('Problem adding status: ' + err + ' ' +
-                         JSON.stringify(data));
         });
     },
 

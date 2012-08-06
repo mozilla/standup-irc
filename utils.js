@@ -80,6 +80,8 @@ function request(path, method, data, emitter) {
     });
     req.end(body);
     req.on('error', function(e) {
+        logger.error(options.host + ':' + options.port + options.path +
+                     ': ' + JSON.stringify(data));
         emitter.emit('error', String(e));
     });
 
