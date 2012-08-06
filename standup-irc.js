@@ -128,17 +128,18 @@ var commands = {
 
     /* Create a status. */
     status: function(user, channel, message, args) {
-        var project = args[1];
+        var project = args[0];
         if (project.charAt(0) == '#') {
             project = project.slice(1);
         }
-        var ret = api.status.create(user, channel, args);
+        var ret = api.status.create(user, project, args.slice(1).join(' '));
         ret.on('ok', function(data) {
             client.say(channel, 'Ok, submitted status #' + data.id);
         });
-        ret.on('error', function(data) {
+        ret.on('error', function(err, data) {
             client.say(channel, 'Uh oh, something went wrong.');
-            logger.error('Problem adding status: ' + JSON.stringify(data));
+            logger.error('Problem adding status: ' + err + ' ' +
+                         JSON.stringify(data));
         });
     },
 
