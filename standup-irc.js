@@ -111,12 +111,12 @@ client.on('message', function(user, channel, msg) {
     if (cond) {
         // msg = "!cmd arg1 arg2 arg3"
         var cmd_name = msg.split(' ')[0].slice(1);
-        var args = msg.split(' ').slice(1).join(' ');
+        var args = msg.split(' ').slice(1);
         var cmd = commands[cmd_name] || commands['default'];
         cmd(user, channel, msg, args);
     } else {
         // If they didn't ask for a specific command, post a status.
-        commands.status(user, channel, msg, msg);
+        commands.status(user, channel, msg, [channel, msg]);
     }
 });
 
@@ -128,8 +128,9 @@ var commands = {
 
     /* Create a status. */
     status: function(user, channel, message, args) {
-        if (channel.charAt(0) == '#') {
-            channel = channel.slice(1);
+        var project = args[1];
+        if (project.charAt(0) == '#') {
+            project = project.slice(1);
         }
         var ret = api.status.create(user, channel, args);
         ret.on('ok', function(data) {
