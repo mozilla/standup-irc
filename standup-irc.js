@@ -144,15 +144,18 @@ var commands = {
 
     /* Delete a status by id number. */
     'delete': function(user, channel, message, args) {
-        if (args.charAt(0) === '#') {
-            args = args.slice(1);
-        }
-        var ret = api.status.delete_(args);
+        var ret = api.status.delete_(args[0], user);
         ret.on('ok', function(data) {
-            client.say(channel, 'Ok, deleted status #' + args);
+            client.say(channel, 'Ok, status #' + args + ' is no more!');
         });
-        ret.on('error', function(data) {
-            client.say(channel, "I'm a failure, I couldn't do it.");
+        ret.on('error', function(code, data) {
+            if (code === 403) {
+                client.say(channel, "You don't have permissiont to do that. " +
+                                    "Do you own that status?");
+            } else {
+                client.say(channel, "I'm a failure, I couldn't do it.");
+            }
+            console.log(data);
         });
     },
 

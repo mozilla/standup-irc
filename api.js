@@ -57,7 +57,11 @@ exports.status = {
     /* Delete a status.
      * - `id`: The id of the status to delete.
      */
-    delete_: function(id) {
+    delete_: function(id, user) {
+        var body = JSON.stringify({
+            user: utils.canonicalUsername(user),
+            api_key: CONFIG.standup.api_key
+        });
         var options = {
             host: CONFIG.standup.host,
             port: CONFIG.standup.port,
@@ -65,7 +69,7 @@ exports.status = {
             method: 'DELETE',
             headers: {
                 'content-type': 'application/json',
-                'content-length': 0
+                'content-length': body.length
             }
         };
 
@@ -83,10 +87,11 @@ exports.status = {
                 if (res.statusCode === 200) {
                     emitter.emit('ok', json);
                 } else {
-                    emitter.emit('error', json);
+                    emitter.emit('error', res.statusCode, json);
                 }
             });
         });
+        req.end(body);
         req.on('error', function(e) {
             emitter.emit('error', String(e));
         });
