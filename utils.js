@@ -51,3 +51,14 @@ function request(path, method, data, emitter) {
     return emitter;
 }
 this.request = request;
+
+
+this.ifAuthorized = function(user, channel, func) {
+    var a = authman.checkUser(user);
+    a.on('authorized', func);
+    a.on('unauthorized', function() {
+        client.say(channel, "I don't trust you, " + user + ", " +
+                            "are you identified with nickserv?");
+    });
+    return a;
+};

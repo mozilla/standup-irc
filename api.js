@@ -12,7 +12,7 @@ exports.status = {
             project = project.slice(1);
         }
         var data = {
-            user: utils.canonicalUsername(user),
+            user: user,
             project: project,
             content: content,
             api_key: CONFIG.standup.api_key
@@ -25,7 +25,7 @@ exports.status = {
      */
     delete_: function(id, user) {
         var data = {
-            user: utils.canonicalUsername(user),
+            user: user,
             api_key: CONFIG.standup.api_key
         };
         return utils.request('/api/v1/status/' + id + '/', 'DELETE', data);

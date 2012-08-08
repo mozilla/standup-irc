@@ -61,7 +61,7 @@ logger = new (winston.Logger)({
 });
 
 // Global authentication manager
-auth = new auth.AuthManager();
+authman = new auth.AuthManager();
 
 // This regex matches valid IRC nicks.
 var NICK_RE = /[a-z_\-\[\]\\{}|`][a-z0-9_\-\[\]\\{}|`]*/;
@@ -132,11 +132,12 @@ client.on('message', function(user, channel, msg) {
 
 client.on('notice', function(from, to, text) {
     if (from === undefined) {
+        console.log('Service Notice: ' + text);
         from = '';
     }
     from = from.toLowerCase();
     if (from === 'nickserv') {
-        auth.notice(from, text);
+        authman.notice(from, text);
     }
 });
 
@@ -148,32 +149,36 @@ var commands = {
 
     /* Create a status. */
     status: function(user, channel, message, args) {
-        var project = args[0];
-        if (project.charAt(0) == '#') {
-            project = project.slice(1);
-        }
-        var ret = api.status.create(user, project, args.slice(1).join(' '));
-        ret.on('ok', function(data) {
-            client.say(channel, 'Ok, submitted status #' + data.id);
-        });
-        ret.on('error', function(err, data) {
-            client.say(channel, 'Uh oh, something went wrong.');
+        utils.ifAuthorized(user, channel, function() {
+            var project = args[0];
+            if (project.charAt(0) == '#') {
+                project = project.slice(1);
+            }
+            var ret = api.status.create(user, project, args.slice(1).join(' '));
+            ret.on('ok', function(data) {
+                client.say(channel, 'Ok, submitted status #' + data.id);
+            });
+            ret.on('error', function(err, data) {
+                client.say(channel, 'Uh oh, something went wrong.');
+            });
         });
     },
 
     /* Delete a status by id number. */
     'delete': function(user, channel, message, args) {
-        var ret = api.status.delete_(args[0], user);
-        ret.on('ok', function(data) {
-            client.say(channel, 'Ok, status #' + args + ' is no more!');
-        });
-        ret.on('error', function(code, data) {
-            if (code === 403) {
-                client.say(channel, "You don't have permissiont to do that. " +
-                                    "Do you own that status?");
-            } else {
-                client.say(channel, "I'm a failure, I couldn't do it.");
-            }
+        utils.ifAuthorized(user, channel, function() {
+            var ret = api.status.delete_(args[0], user);
+            ret.on('ok', function(data) {
+                client.say(channel, 'Ok, status #' + args + ' is no more!');
+            });
+            ret.on('error', function(code, data) {
+                if (code === 403) {
+                    client.say(channel, "You don't have permissiont to do that. " +
+                                        "Do you own that status?");
+                } else {
+                    client.say(channel, "I'm a failure, I couldn't do it.");
+                }
+            });
         });
     },
 
@@ -192,7 +197,7 @@ var commands = {
 
     /* Check a user's authorization status. */
     'trust': function(user, channel, message, args) {
-        var a = auth.checkUser(args);
+        var a = authman.checkUser(args);
         a.on('authorized', function() {
             client.say(channel, 'I trust ' + args);
         });
