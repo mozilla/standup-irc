@@ -155,10 +155,10 @@ var commands = {
                 project = project.slice(1);
             }
             var ret = api.status.create(user, project, args.slice(1).join(' '));
-            ret.on('ok', function(data) {
+            ret.once('ok', function(data) {
                 client.say(channel, 'Ok, submitted status #' + data.id);
             });
-            ret.on('error', function(err, data) {
+            ret.once('error', function(err, data) {
                 client.say(channel, 'Uh oh, something went wrong.');
             });
         });
@@ -168,10 +168,10 @@ var commands = {
     'delete': function(user, channel, message, args) {
         utils.ifAuthorized(user, channel, function() {
             var ret = api.status.delete_(args[0], user);
-            ret.on('ok', function(data) {
+            ret.once('ok', function(data) {
                 client.say(channel, 'Ok, status #' + args + ' is no more!');
             });
-            ret.on('error', function(code, data) {
+            ret.once('error', function(code, data) {
                 if (code === 403) {
                     client.say(channel, "You don't have permissiont to do that. " +
                                         "Do you own that status?");
@@ -198,10 +198,10 @@ var commands = {
     /* Check a user's authorization status. */
     'trust': function(user, channel, message, args) {
         var a = authman.checkUser(args);
-        a.on('authorized', function() {
+        a.once('authorized', function() {
             client.say(channel, 'I trust ' + args);
         });
-        a.on('unauthorized', function() {
+        a.once('unauthorized', function() {
             client.say(channel, "I don't trust " + args);
         });
     },

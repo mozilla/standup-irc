@@ -30,7 +30,7 @@ function request(path, method, data, emitter) {
             resp_data += chunk;
         });
         // When we have received the entire response
-        res.on('end', function() {
+        res.once('end', function() {
             if (res.statusCode === 200) {
                 var json = JSON.parse(resp_data);
                 emitter.emit('ok', json);
@@ -42,7 +42,7 @@ function request(path, method, data, emitter) {
         });
     });
     req.end(body);
-    req.on('error', function(e) {
+    req.once('error', function(e) {
         logger.error(options.host + ':' + options.port + options.path +
                      ': ' + JSON.stringify(data));
         emitter.emit('error', String(e));
@@ -55,8 +55,8 @@ this.request = request;
 
 this.ifAuthorized = function(user, channel, func) {
     var a = authman.checkUser(user);
-    a.on('authorized', func);
-    a.on('unauthorized', function() {
+    a.once('authorized', func);
+    a.once('unauthorized', function() {
         client.say(channel, "I don't trust you, " + user + ", " +
                             "are you identified with nickserv?");
     });
