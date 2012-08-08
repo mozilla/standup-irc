@@ -6,6 +6,7 @@ var inireader = require('inireader');
 
 var utils = require('./utils');
 var api = require('./api');
+var auth = require('./auth');
 
 var options = nomnom.opts({
     config: {
@@ -59,13 +60,17 @@ logger = new (winston.Logger)({
     transports: transports
 });
 
+// Global authentication manager
+auth = new auth.AuthManager();
+
 // This regex matches valid IRC nicks.
 var NICK_RE = /[a-z_\-\[\]\\{}|`][a-z0-9_\-\[\]\\{}|`]*/;
 var TARGET_MSG_RE = new RegExp('^(?:(' + NICK_RE.source + ')[:,]\\s*)?(.*)$');
 
 /********** IRC Client **********/
 
-var client = new irc.Client(CONFIG.irc.host, CONFIG.irc.nick, {
+// Global client
+client = new irc.Client(CONFIG.irc.host, CONFIG.irc.nick, {
     channels: CONFIG.irc.channels
 });
 client.on('connect', function() {
@@ -125,6 +130,16 @@ client.on('message', function(user, channel, msg) {
     }
 });
 
+client.on('notice', function(from, to, text) {
+    if (from === undefined) {
+        from = '';
+    }
+    from = from.toLowerCase();
+    if (from === 'nickserv') {
+        auth.notice(from, text);
+    }
+});
+
 var commands = {
     /* Simple presence check. */
     ping: function(user, channel, message, args) {
@@ -159,10 +174,10 @@ var commands = {
             } else {
                 client.say(channel, "I'm a failure, I couldn't do it.");
             }
-            console.log(data);
         });
     },
 
+    /* Every bot loves botsnacks. */
     'botsnack': function(user, channel, message, args) {
         var responses = [
             'Yummy!',
@@ -173,6 +188,17 @@ var commands = {
         ];
         var r = Math.floor(Math.random() * responses.length);
         client.say(channel, responses[r]);
+    },
+
+    /* Check a user's authorization status. */
+    'trust': function(user, channel, message, args) {
+        var a = auth.checkUser(args);
+        a.on('authorized', function() {
+            client.say(channel, 'I trust ' + args);
+        });
+        a.on('unauthorized', function() {
+            client.say(channel, "I don't trust " + args);
+        });
     },
 
     /* The default action. Return an error. */
