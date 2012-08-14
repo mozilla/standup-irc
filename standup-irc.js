@@ -173,12 +173,25 @@ var commands = {
             });
             ret.once('error', function(code, data) {
                 if (code === 403) {
-                    client.say(channel, "You don't have permissiont to do that. " +
-                                        "Do you own that status?");
+                    client.say(channel, "You don't have permissiont to do " +
+                                        "that. Do you own that status?");
                 } else {
                     client.say(channel, "I'm a failure, I couldn't do it.");
                 }
             });
+        });
+    },
+
+    /* Modify a user. */
+    'user': function(user, channel, message, args) {
+        utils.ifAuthorized(user, channel, function() {
+            var target = args[0];
+            var changes = {};
+            _.each(args.slice(1), function(arg) {
+                var match = /[^=]+=.+/.exec(arg);
+                changes[match[1]] = changes[match[2]];
+            });
+            var ret = api.user.update(args[0], changes);
         });
     },
 

@@ -32,5 +32,19 @@ exports.status = {
     }
 };
 
-function submitStatus(irc_handle, irc_channel, content) {
-}
+exports.users = {
+    /* Change a user's values
+     * - `target_user` - The user to modify.
+     * - `acting_user` - The user making the changes.
+     * - `changes` - An object describing the changes to be made. For example,
+     *   to change the email of a user, this would be {email: 'bob@example.com'}
+     */
+    update: function(target_user, acting_user, changes) {
+        var data = {
+            api_key: CONFIG.standup.api_key,
+            user: acting_user
+        };
+        _.extend(data, changes);
+        return utils.request('/api/v1/user/' + target_user + '/', 'POST', data);
+    }
+};
