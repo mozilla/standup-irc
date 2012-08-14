@@ -31,6 +31,3 @@ exports.status = {
         return utils.request('/api/v1/status/' + id + '/', 'DELETE', data);
     }
 };
-
-function submitStatus(irc_handle, irc_channel, content) {
-}

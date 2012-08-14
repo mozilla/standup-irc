@@ -55,10 +55,20 @@ this.request = request;
 
 this.ifAuthorized = function(user, channel, func) {
     var a = authman.checkUser(user);
-    a.once('authorized', func);
-    a.once('unauthorized', function() {
+
+    function doTrust() {
+        a.removeListener(dontTrust);
+        func();
+    }
+
+    function dontTrust() {
+        a.removeListener(trust);
         client.say(channel, "I don't trust you, " + user + ", " +
                             "are you identified with nickserv?");
-    });
+    }
+
+    a.once('authorized', doTrust);
+    a.once('unauthorized', dontTrust);
+
     return a;
 };

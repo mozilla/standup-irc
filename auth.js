@@ -40,17 +40,17 @@ this.AuthManager.prototype.notice = function(nick, message) {
 this.AuthManager.prototype.checkUser = function(nick) {
     var self = this;
     var user = this._user(nick);
-    process.nextTick(function() {
-        if (user.auth) {
-            user.emitter.emit('authorized');
-        } else {
-            self._askNickserv(nick);
-        }
-    });
+    if (user.auth) {
+        process.nextTick(function() {
+                user.emitter.emit('authorized');
+        });
+    } else {
+        self._askNickserv(nick);
+    }
     return user.emitter;
-}
+};
 
 this.AuthManager.prototype._askNickserv = function(nick) {
     var msg = 'status ' + nick;
     client.say('nickserv', msg);
-}
+};

@@ -173,8 +173,8 @@ var commands = {
             });
             ret.once('error', function(code, data) {
                 if (code === 403) {
-                    client.say(channel, "You don't have permissiont to do that. " +
-                                        "Do you own that status?");
+                    client.say(channel, "You don't have permissiont to do " +
+                                        "that. Do you own that status?");
                 } else {
                     client.say(channel, "I'm a failure, I couldn't do it.");
                 }
