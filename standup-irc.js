@@ -167,16 +167,32 @@ var commands = {
     /* Delete a status by id number. */
     'delete': function(user, channel, message, args) {
         utils.ifAuthorized(user, channel, function() {
-            var ret = api.status.delete_(args[0], user);
+            var id = args[0];
+            if (id[0] == '#') {
+                id = id.slice(1);
+            }
+            id = parseInt(id, 10);
+            if (isNaN(id)) {
+                client.say(channel, '"' + args[0] + '" ' +
+                                    'is not a valid status ID.');
+                return;
+            }
+
+            var ret = api.status.delete_(id, user);
             ret.once('ok', function(data) {
-                client.say(channel, 'Ok, status #' + args + ' is no more!');
+                client.say(channel, 'Ok, status #' + id + ' is no more!');
             });
             ret.once('error', function(code, data) {
+                data = JSON.parse(data);
                 if (code === 403) {
                     client.say(channel, "You don't have permissiont to do " +
                                         "that. Do you own that status?");
                 } else {
-                    client.say(channel, "I'm a failure, I couldn't do it.");
+                    var msg = "I'm a failure, I couldn't do it.";
+                    if (data.error) {
+                        msg += ' The server said: "' + data.error + '"';
+                    }
+                    client.say(channel, msg);
                 }
             });
         });
