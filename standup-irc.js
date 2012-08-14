@@ -132,7 +132,7 @@ client.on('message', function(user, channel, msg) {
 
 client.on('notice', function(from, to, text) {
     if (from === undefined) {
-        console.log('Service Notice: ' + text);
+        logger.info('Service Notice: ' + text);
         from = '';
     }
     from = from.toLowerCase();
@@ -198,11 +198,12 @@ var commands = {
     /* Check a user's authorization status. */
     'trust': function(user, channel, message, args) {
         var a = authman.checkUser(args);
-        a.once('authorized', function() {
-            client.say(channel, 'I trust ' + args);
-        });
-        a.once('unauthorized', function() {
-            client.say(channel, "I don't trust " + args);
+        a.once('authorization', function(trust) {
+            if (trust) {
+                client.say(channel, 'I trust ' + args);
+            } else {
+                client.say(channel, "I don't trust " + args);
+            }
         });
     },
 

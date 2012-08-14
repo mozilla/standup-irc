@@ -29,10 +29,10 @@ this.AuthManager.prototype.notice = function(nick, message) {
 
         if (level >= this.neededLevel) {
             user.auth = true;
-            user.emitter.emit('authorized');
+            user.emitter.emit('authorization', true);
         } else {
             user.auth = false;
-            user.emitter.emit('unauthorized');
+            user.emitter.emit('authorization', false);
         }
     }
 };
@@ -40,13 +40,13 @@ this.AuthManager.prototype.notice = function(nick, message) {
 this.AuthManager.prototype.checkUser = function(nick) {
     var self = this;
     var user = this._user(nick);
-    if (user.auth) {
-        process.nextTick(function() {
-                user.emitter.emit('authorized');
-        });
-    } else {
-        self._askNickserv(nick);
-    }
+    process.nextTick(function() {
+        if (user.auth) {
+                user.emitter.emit('authorization', true);
+        } else {
+            self._askNickserv(nick);
+        }
+    });
     return user.emitter;
 };
 
