@@ -1,4 +1,6 @@
 /* Functions to access the remote web api of a standup app. */
+var _ = require('underscore');
+
 var utils = require('./utils');
 
 exports.status = {
@@ -32,7 +34,7 @@ exports.status = {
     }
 };
 
-exports.users = {
+exports.user = {
     /* Change a user's values
      * - `target_user` - The user to modify.
      * - `acting_user` - The user making the changes.

@@ -37,6 +37,8 @@ function request(path, method, data, emitter) {
             } else if (res.statusCode === 301) {
                 request(res.headers.location, method, data, emitter);
             } else {
+                logger.error(options.path + ': ' + res.statusCode + ' ' +
+                                resp_data);
                 emitter.emit('error', res.statusCode, resp_data);
             }
         });

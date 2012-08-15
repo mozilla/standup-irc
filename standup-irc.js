@@ -132,7 +132,7 @@ client.on('message', function(user, channel, msg) {
 
 client.on('notice', function(from, to, text) {
     if (from === undefined) {
-        console.log('Service Notice: ' + text);
+        logger.info('Server Notice: ' + text);
         from = '';
     }
     from = from.toLowerCase();
@@ -188,10 +188,10 @@ var commands = {
             var target = args[0];
             var changes = {};
             _.each(args.slice(1), function(arg) {
-                var match = /[^=]+=.+/.exec(arg);
-                changes[match[1]] = changes[match[2]];
+                var match = /([^=]+)=(.+)/.exec(arg);
+                changes[match[1]] = match[2];
             });
-            var ret = api.user.update(args[0], changes);
+            var ret = api.user.update(args[0], user, changes);
         });
     },
 
