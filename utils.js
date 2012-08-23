@@ -68,5 +68,40 @@ exports.ifAuthorized = function(user, channel, callback) {
 };
 
 exports.escapeRegExp = function(str) {
-    return str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+    return str.replace(/[-\[\]{}()*+?.,\\\^$|#\s]/g, "\\$&");
+}
+
+/* Parse things like quotes strings from an argument list. */
+exports.parseArgs = function(argList) {
+    var args = [];
+    var argBuilder = "";
+    var quote = "";
+    _.each(argList, function(arg) {
+        if (argBuilder) {
+            argBuilder += ' ' + arg;
+            if (arg.slice(-1) === quote) {
+                argBuilder = argBuilder.slice(0, -1);
+                args.push(argBuilder);
+                argBuilder = "";
+                quote = "";
+            }
+        } else {
+            if (arg[0] === "'") {
+                quote = "'";
+            } else if (arg[0] === '"') {
+                quote = '"';
+            }
+            if (quote) {
+                if (arg.slice(-1) === quote) {
+                    args.push(arg.slice(1,-1));
+                    quote = '';
+                } else {
+                    argBuilder = arg.slice(1);
+                }
+            } else {
+                args.push(arg);
+            }
+        }
+    });
+    return args;
 }

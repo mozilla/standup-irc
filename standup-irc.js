@@ -119,6 +119,7 @@ client.on('message', function(user, channel, message) {
             // message = "!cmd arg1 arg2 arg3"
             var cmd_name = message.split(' ')[0].slice(1);
             var args = message.split(' ').slice(1);
+            args = utils.parseArgs(args);
             var cmd = commands[cmd_name] || commands['default'];
             cmd.func(user, channel, message, args);
         } else {
@@ -222,6 +223,7 @@ var commands = {
                         client.say(channel, "You don't have permission to do " +
                             "that. Did you post that status?");
                     } else {
+                        console.log(data);
                         var error = "I'm a failure, I couldn't do it.";
                         if (data.error) {
                             error += ' The server said: "' + data.error + '"';
@@ -360,6 +362,7 @@ var commands = {
                                 "that.");
                         } else {
                             var error = "I'm a failure, I couldn't do it.";
+                            console.log(data);
                             if (data.error) {
                                 error += ' The server said: "' + data.error + '"';
                             }
