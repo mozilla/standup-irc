@@ -119,6 +119,7 @@ client.on('message', function(user, channel, message) {
             // message = "!cmd arg1 arg2 arg3"
             var cmd_name = message.split(' ')[0].slice(1);
             var args = message.split(' ').slice(1);
+            args = utils.parseArgs(args);
             var cmd = commands[cmd_name] || commands['default'];
             cmd.func(user, channel, message, args);
         } else {
