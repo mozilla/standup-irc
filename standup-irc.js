@@ -1,4 +1,5 @@
 var _ = require('underscore');
+var fs = require('fs');
 var irc = require('irc');
 var path = require('path');
 var pg = require('pg');
@@ -25,8 +26,10 @@ var defaults = {
     }
 };
 
+var existsSync = fs.existsSync || path.existsSync;
+
 // Global config.
-if (path.existsSync('./config.json')) {
+if (existsSync('./config.json')) {
     config = require('./config.json');
 }
 

@@ -1,8 +1,11 @@
 var _ = require('underscore');
+var fs = require('fs');
 var path = require('path');
 
+var existsSync = fs.existsSync || path.existsSync;
+
 // Global config.
-if (path.existsSync('./config.json')) {
+if (existsSync('./config.json')) {
     config = require('./config.json');
 }
 
@@ -36,7 +39,7 @@ if (config.pg.enabled) {
         query.on('end', function(result) {
             current++;
 
-            while(path.existsSync('./migrations/' + current + '.js')) {
+            while(existsSync('./migrations/' + current + '.js')) {
                 console.log('Running migration #' + current);
                 var migration = require('./migrations/' + current);
                 migration.upgrade(client);
