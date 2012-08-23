@@ -23,7 +23,7 @@ exports.status = {
     /* Delete a status.
      * - `id`: The id of the status to delete.
      */
-    delete_: function(id, user) {
+    delete: function(id, user) {
         var data = {
             user: user,
             api_key: config.standup.api_key
@@ -31,3 +31,20 @@ exports.status = {
         return utils.request('/api/v1/status/' + id + '/', 'DELETE', data);
     }
 };
+
+exports.user = {
+    /* Update a users settings.
+     * - `nick`: The nick of the user that submitted the request.
+     * - `user`: The user who's settings to change
+     * - `key`: The name of the setting to be changed.
+     * - `value`: The new value of the setting.
+     */
+    update: function(nick, key, value, user) {
+        var data = {
+            user: nick,
+            api_key: config.standup.api_key
+        }
+        data[key] = value;
+        return utils.request('/api/v1/user/' + user + '/', 'POST', data);
+    }
+}

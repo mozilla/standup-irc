@@ -188,7 +188,7 @@ var commands = {
                 return;
             }
 
-            var response = api.status.delete_(id, user);
+            var response = api.status.delete(id, user);
 
             response.once('ok', function(data) {
                 client.say(channel, 'Ok, status #' + id + ' is no more!');
@@ -247,6 +247,41 @@ var commands = {
         say('botsnack - Feed the bot!');
         say('!bye - Ask to leave the channel.');
         say('!delete <id> - Delete a previously posted status.');
+        say("!update <name|email|github_handle> <value> [<user>] - Updates the user's setting.");
+    },
+
+    'update': function(user, channel, message, args) {
+        utils.ifAuthorized(user, channel, function() {
+            var what = args[0];
+            var value = args[1];
+            var who = args[2];
+
+
+            if (who === undefined) {
+                who = user;
+            }
+
+            if (what && value) {
+                var response = api.user.update(user, what, value, who);
+
+                response.once('ok', function(data) {
+                    client.action(channel, "updates some stuff!");
+                });
+
+                response.once('error', function(code, data) {
+                    if (code === 403) {
+                        client.say(channel, "You don't have permission to do " +
+                            "that.");
+                    } else {
+                        var error = "I'm a failure, I couldn't do it.";
+                        if (data.error) {
+                            error += ' The server said: "' + data.error + '"';
+                        }
+                        client.say(channel, error);
+                    }
+                });
+            }
+        });
     },
 
     /* The default action. Return an error. */
