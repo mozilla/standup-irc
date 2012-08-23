@@ -2,15 +2,14 @@ var _ = require('underscore');
 var http = require('http');
 var events = require('events');
 
-
-function request(path, method, data, emitter) {
+this.request = function(path, method, data, emitter) {
     if (data === undefined) {
         data = {};
     }
     var body = JSON.stringify(data);
     var options = {
-        host: CONFIG.standup.host,
-        port: CONFIG.standup.port,
+        host: config.standup.host,
+        port: config.standup.port,
         path: path,
         method: method,
         headers: {
@@ -50,15 +49,13 @@ function request(path, method, data, emitter) {
 
     return emitter;
 }
-this.request = request;
 
-
-this.ifAuthorized = function(user, channel, func) {
+this.ifAuthorized = function(user, channel, callback) {
     var a = authman.checkUser(user);
 
     a.once('authorization', function(trust) {
         if (trust) {
-            func();
+            callback();
         } else {
             client.say(channel, "I don't trust you, " + user + ", " +
                                 "are you identified with nickserv?");
@@ -67,3 +64,7 @@ this.ifAuthorized = function(user, channel, func) {
 
     return a;
 };
+
+this.escapeRegExp = function(str) {
+    return str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+}

@@ -1,6 +1,5 @@
-var events = require('events');
 var _ = require('underscore');
-
+var events = require('events');
 
 this.AuthManager = function() {
     this.neededLevel = 2;

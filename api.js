@@ -8,14 +8,14 @@ exports.status = {
      * - `content`: The text of the status.
      */
     create: function(user, project, content) {
-        if (project.charAt(0) === '#') {
+        if (project[0] === '#') {
             project = project.slice(1);
         }
         var data = {
             user: user,
             project: project,
             content: content,
-            api_key: CONFIG.standup.api_key
+            api_key: config.standup.api_key
         };
         return utils.request('/api/v1/status/', 'POST', data);
     },
@@ -26,7 +26,7 @@ exports.status = {
     delete_: function(id, user) {
         var data = {
             user: user,
-            api_key: CONFIG.standup.api_key
+            api_key: config.standup.api_key
         };
         return utils.request('/api/v1/status/' + id + '/', 'DELETE', data);
     }

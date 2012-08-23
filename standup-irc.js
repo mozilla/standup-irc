@@ -1,27 +1,17 @@
 var _ = require('underscore');
+var http = require('http');
 var irc = require('irc');
+var path = require('path');
 var winston = require('winston');
-var nomnom = require('nomnom');
-var inireader = require('inireader');
 
-var utils = require('./utils');
 var api = require('./api');
 var auth = require('./auth');
-
-var options = nomnom.opts({
-    config: {
-        string: '-c CONFIG, --config=CONFIG',
-        'default': 'config.ini',
-        help: 'What config file to use. Default: config.ini.'
-    }
-}).parseArgs();
-
-var optionsini = inireader.IniReader(options.config);
+var utils = require('./utils');
 
 // Default configs
-var DEFAULTS = {
+var defaults = {
     irc: {
-        ircnick: 'standup'
+        nick: 'standup'
     },
     standup: {
         port: 80
@@ -29,30 +19,23 @@ var DEFAULTS = {
     log: {
         console: true,
         file: null
-    },
-    users: {
-        nicks: []
     }
 };
 
-optionsini.load();
 // Global config.
-CONFIG = optionsini.getBlock();
-if (CONFIG.users && CONFIG.users.nicks !== undefined) {
-    CONFIG.users.nicks = CONFIG.users.nicks.split(',');
+if (path.existsSync('./config.json')) {
+    config = require('./config.json');
 }
-if (CONFIG.irc && CONFIG.irc.channels !== undefined) {
-    CONFIG.irc.channels = CONFIG.irc.channels.split(',');
-}
-CONFIG = _.extend({}, DEFAULTS, CONFIG);
+
+config = _.extend({}, defaults, config || {});
 
 var transports = [];
-if (CONFIG.log.file) {
+if (config.log.file) {
     transports.push(new (winston.transports.File)({
-        filename: CONFIG.log.file
+        filename: config.log.file
     }));
 }
-if (CONFIG.log.console) {
+if (config.log.console) {
     transports.push(new (winston.transports.Console)());
 }
 // Global logger.
@@ -64,29 +47,54 @@ logger = new (winston.Logger)({
 authman = new auth.AuthManager();
 
 // This regex matches valid IRC nicks.
-var NICK_RE = /[a-z_\-\[\]\\{}|`][a-z0-9_\-\[\]\\{}|`]*/;
-var TARGET_MSG_RE = new RegExp('^(?:(' + NICK_RE.source + ')[:,]\\s*)?(.*)$');
 
 /********** IRC Client **********/
 
 // Global client
-client = new irc.Client(CONFIG.irc.host, CONFIG.irc.nick, {
-    channels: CONFIG.irc.channels
+client = new irc.Client(config.irc.host, config.irc.nick, {
+    channels: config.irc.channels
 });
-client.on('connect', function() {
-    logger.info('Connected to irc server.');
+
+// Connected to IRC server
+client.on('registered', function(message) {
+    logger.info('Connected to IRC server.');
+
+    // Store the nickname assigned by the server
+    config.irc.realNick = message.args[0];
+    logger.info('Using nickname: ' + config.irc.realNick);
 });
 
 // Handle errors by dumping them to logging.
-client.on('error', function(err) {
+client.on('error', function(error) {
     // Error 421 comes up a lot on Mozilla servers, but isn't a problem.
-    if (err.rawCommand !== '421') {
+    if (error.rawCommand !== '421') {
         return;
     }
 
-    logger.error(err);
-    if (err.hasOwnProperty('stack')) {
-        logger.error(err.stack);
+    logger.error(error);
+    if (error.hasOwnProperty('stack')) {
+        logger.error(error.stack);
+    }
+});
+
+/* The bot gets invited to a channel by a user
+ * - `channel`: The channel the bot is invited to.
+ * - `from`: The nick of the user who invited the bot.
+ */
+client.on('invite', function(channel, from) {
+    logger.info('Invited to ' + channel + ' by ' + from + '.');
+    client.join(channel);
+});
+
+/* The bot gets kicked out of a channel
+ * - `channel`: The channel that the user is getting kicked from.
+ * - `user`: The nick of the user getting kicked from.
+ * - `by`: The nick of the kicker.
+ */
+client.on('kick', function(channel, user, by) {
+    if (user === config.irc.realNick) {
+        logger.info('Kicked from ' + channel + ' by ' + by + '.');
+        commands['bye'](user, channel);
     }
 });
 
@@ -95,47 +103,46 @@ client.on('error', function(err) {
  * - `channel`: The channel the message was received in. Note, this might not be
  *   a real channel, because it could be a PM. But this function ignores
  *   those messages anyways.
- * - `msg`: The text of the message sent.
+ * - `message`: The text of the message sent.
  */
-client.on('message', function(user, channel, msg) {
-    var target, match;
+client.on('message', function(user, channel, message) {
+    var match, nick, targetMessageRegex;
 
-    match = TARGET_MSG_RE.exec(msg);
-     // This shouldn't happen, but bail out if it does, just in case.
-    if (!match) { return; }
+    nick = utils.escapeRegExp(config.irc.realNick);
+    targetMessageRegex = new RegExp('^' + nick + '[:,]\\s*?(.*)$');
 
-    target = match[1];
-    msg = match[2].trim();
+    match = targetMessageRegex.exec(message);
 
-    // Don't talk to myself, don't list to PMs, and only speak when spoken to.
-    if (user === CONFIG.irc.nick || channel[0] !== '#' ||
-            target !== CONFIG.irc.nick) {
-        return;
-    }
-    var cond = msg.charAt(0) === '!';
-    if (cond) {
-        // msg = "!cmd arg1 arg2 arg3"
-        var cmd_name = msg.split(' ')[0].slice(1);
-        var args = msg.split(' ').slice(1);
-        var cmd = commands[cmd_name] || commands['default'];
-        cmd(user, channel, msg, args);
-    } else {
-        // Special case for botsnack
-        if (msg.toLowerCase().trim() === 'botsnack') {
-            commands.botsnack(user, channel, msg, []);
-            return;
+    if (match) {
+        message = match[1].trim();
+
+        if (message[0] === '!') {
+            // message = "!cmd arg1 arg2 arg3"
+            var cmd_name = message.split(' ')[0].slice(1);
+            var args = message.split(' ').slice(1);
+            var cmd = commands[cmd_name] || commands['default'];
+            cmd(user, channel, message, args);
+        } else {
+            if (message.toLowerCase() === 'botsnack') {
+                // Special case for botsnack
+                commands.botsnack(user, channel, message, []);
+            } else {
+                // If they didn't ask for a specific command, post a status.
+                commands.status(user, channel, message, [channel, message]);
+            }
         }
-        // If they didn't ask for a specific command, post a status.
-        commands.status(user, channel, msg, [channel, msg]);
     }
 });
 
+// Read server notices
 client.on('notice', function(from, to, text) {
     if (from === undefined) {
         logger.info('Service Notice: ' + text);
         from = '';
     }
+
     from = from.toLowerCase();
+
     if (from === 'nickserv') {
         authman.notice(from, text);
     }
@@ -151,14 +158,18 @@ var commands = {
     status: function(user, channel, message, args) {
         utils.ifAuthorized(user, channel, function() {
             var project = args[0];
-            if (project.charAt(0) == '#') {
+            if (project[0] === '#') {
                 project = project.slice(1);
             }
-            var ret = api.status.create(user, project, args.slice(1).join(' '));
-            ret.once('ok', function(data) {
+
+            var status = args.slice(1).join(' ');
+            var response = api.status.create(user, project, status);
+
+            response.once('ok', function(data) {
                 client.say(channel, 'Ok, submitted status #' + data.id);
             });
-            ret.once('error', function(err, data) {
+
+            response.once('error', function(err, data) {
                 client.say(channel, 'Uh oh, something went wrong.');
             });
         });
@@ -168,7 +179,7 @@ var commands = {
     'delete': function(user, channel, message, args) {
         utils.ifAuthorized(user, channel, function() {
             var id = args[0];
-            if (id[0] == '#') {
+            if (id[0] === '#') {
                 id = id.slice(1);
             }
             id = parseInt(id, 10);
@@ -178,21 +189,23 @@ var commands = {
                 return;
             }
 
-            var ret = api.status.delete_(id, user);
-            ret.once('ok', function(data) {
+            var response = api.status.delete_(id, user);
+
+            response.once('ok', function(data) {
                 client.say(channel, 'Ok, status #' + id + ' is no more!');
             });
-            ret.once('error', function(code, data) {
+
+            response.once('error', function(code, data) {
                 data = JSON.parse(data);
                 if (code === 403) {
-                    client.say(channel, "You don't have permissiont to do " +
-                                        "that. Do you own that status?");
+                    client.say(channel, "You don't have permission to do " +
+                                        "that. Did you post that status?");
                 } else {
-                    var msg = "I'm a failure, I couldn't do it.";
+                    var error = "I'm a failure, I couldn't do it.";
                     if (data.error) {
-                        msg += ' The server said: "' + data.error + '"';
+                        error += ' The server said: "' + data.error + '"';
                     }
-                    client.say(channel, msg);
+                    client.say(channel, error);
                 }
             });
         });
@@ -200,15 +213,14 @@ var commands = {
 
     /* Every bot loves botsnacks. */
     'botsnack': function(user, channel, message, args) {
-        var responses = [
+        var replies = [
             'Yummy!',
             'Thanks, ' + user + '!',
             'My favorite!',
             'Can I have another?',
             'Tasty!'
         ];
-        var r = Math.floor(Math.random() * responses.length);
-        client.say(channel, responses[r]);
+        client.say(channel, _.shuffle(replies)[0]);
     },
 
     /* Check a user's authorization status. */
@@ -223,8 +235,23 @@ var commands = {
         });
     },
 
+    'bye': function(user, channel) {
+        client.say(channel, 'Bye!');
+        client.part(channel);
+    },
+
+    'help': function(user, channel) {
+        function say(message) {
+            client.say(channel, message);
+        }
+        say('Available commands:');
+        say('botsnack - Feed the bot!');
+        say('!bye - Ask to leave the channel.');
+        say('!delete <id> - Delete a previously posted status.');
+    },
+
     /* The default action. Return an error. */
     'default': function(user, channel, message) {
-        client.say(channel, user + ": Wait, what?");
+        client.say(channel, user + ": Huh? Try !help.");
     }
 };
