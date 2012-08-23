@@ -1,0 +1,16 @@
+{
+    "standup": {
+        "api_key": "acdef12345",
+        "host": "api.website.com",
+        "port": "80"
+    },
+    "irc": {
+        "host": "irc.server.com",
+        "channels": ["#channel1", "#channel2"],
+        "nick": "standup"
+    },
+    "log": {
+        "console": true,
+        "file": null
+    }
+}
