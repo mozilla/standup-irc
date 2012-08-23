@@ -82,8 +82,7 @@ client.on('error', function(error) {
  */
 client.on('invite', function(channel, from) {
     logger.info('Invited to ' + channel + ' by ' + from + '.');
-    client.join(channel);
-    config.irc.channels.push(channel);
+    commands.goto.func(from, channel, '', [channel]);
 });
 
 /* The bot gets kicked out of a channel
@@ -149,8 +148,143 @@ client.on('notice', function(from, to, text) {
 });
 
 var commands = {
+    /* Post a message in all channels */
+    'announce': {
+        help: "Broadcast a message in all other channels.",
+        usage: "<message>",
+        func: function(user, channel, message, args) {
+            _.each(client.chans, function(data, chan) {
+                if (chan !== channel) {
+                    client.say(chan, args.join(' '));
+                }
+            });
+        }
+    },
+
+    /* Every bot loves botsnacks. */
+    'botsnack': {
+        func: function(user, channel, message, args) {
+            var replies = [
+                'Yummy!',
+                'Thanks, ' + user + '!',
+                'My favorite!',
+                'Can I have another?',
+                'Tasty!'
+            ];
+            client.say(channel, _.shuffle(replies)[0]);
+        }
+    },
+
+    /* Leave the channel */
+    'bye': {
+        help: "Ask the bot to leave the channel.",
+        func: function(user, channel) {
+            client.say(channel, 'Bye!');
+            client.part(channel);
+        }
+    },
+
+    /* List all channels */
+    'chanlist': {
+        help: "Get a list of channels that I am in.",
+        func: function(user, channel) {
+            client.say(channel, "I'm currently in:");
+            client.say(channel, _.keys(client.chans).sort().join(', '));
+        }
+    },
+
+    /* Delete a status by id number. */
+    'delete': {
+        help: "Delete a status by id.",
+        usage: "<id>",
+        func: function(user, channel, message, args) {
+            utils.ifAuthorized(user, channel, function() {
+                var id = args[0];
+                if (id[0] === '#') {
+                    id = id.slice(1);
+                }
+                id = parseInt(id, 10);
+                if (isNaN(id)) {
+                    client.say(channel, '"' + args[0] + '" ' +
+                        'is not a valid status ID.');
+                    return;
+                }
+
+                var response = api.status.delete(id, user);
+
+                response.once('ok', function(data) {
+                    client.say(channel, 'Ok, status #' + id + ' is no more!');
+                });
+
+                response.once('error', function(code, data) {
+                    data = JSON.parse(data);
+                    if (code === 403) {
+                        client.say(channel, "You don't have permission to do " +
+                            "that. Did you post that status?");
+                    } else {
+                        var error = "I'm a failure, I couldn't do it.";
+                        if (data.error) {
+                            error += ' The server said: "' + data.error + '"';
+                        }
+                        client.say(channel, error);
+                    }
+                });
+            });
+        }
+    },
+
+    /* Tell the bot to join a channel */
+    'goto': {
+        help: 'Tell the bot to join a channel.reg   ',
+        usage: '<channel>',
+        func: function(user, channel, message, args) {
+            var join = args[0];
+
+            if (join[0] !== '#') {
+                join = '#' + join;
+            }
+
+            if (join) {
+                client.join(join);
+            }
+        }
+    },
+
+    /* Provide a help system.
+     *
+     * To give a command a help message, define a 'help' field in it's object.
+     * If the help field is not present, the command will not be listed.
+     * To give a comand an arguments list, define a 'usage' field in it's object.
+     * If the usage field is not present, the command will not list a usage it's help message.
+     */
+    'help': {
+        help: "This help message.",
+        func: function(user, channel) {
+            var command, help, usage;
+
+            client.say(channel, 'Available commands:');
+
+            _.each(_.keys(commands).sort(), function(command) {
+                help = commands[command].help;
+                usage = commands[command].usage;
+
+                if (help !== undefined) {
+                    var message = ['!' + command];
+
+                    if (usage !== undefined) {
+                        message.push(usage)
+                    }
+
+                    message.push('- ' + help);
+
+                    client.say(channel, message.join(' '));
+                }
+            });
+        }
+    },
+
     /* Simple presence check. */
-    ping: {
+    'ping': {
         help: "A simple presence check.",
         usage: undefined,
         func: function(user, channel, message, args) {
@@ -159,8 +293,7 @@ var commands = {
     },
 
     /* Create a status. */
-    status: {
-        help: undefined, // Don't tell the user about this.
+    'status': {
         usage: "<project> status message",
         func: function(user, channel, message, args) {
             utils.ifAuthorized(user, channel, function() {
@@ -183,60 +316,6 @@ var commands = {
         }
     },
 
-    /* Delete a status by id number. */
-    'delete': {
-        help: "Delete a status by id.",
-        usage: "<id>",
-        func: function(user, channel, message, args) {
-            utils.ifAuthorized(user, channel, function() {
-                var id = args[0];
-                if (id[0] === '#') {
-                    id = id.slice(1);
-                }
-                id = parseInt(id, 10);
-                if (isNaN(id)) {
-                    client.say(channel, '"' + args[0] + '" ' +
-                                        'is not a valid status ID.');
-                    return;
-                }
-
-                var response = api.status.delete(id, user);
-
-                response.once('ok', function(data) {
-                    client.say(channel, 'Ok, status #' + id + ' is no more!');
-                });
-
-                response.once('error', function(code, data) {
-                    data = JSON.parse(data);
-                    if (code === 403) {
-                        client.say(channel, "You don't have permission to do " +
-                                            "that. Did you post that status?");
-                    } else {
-                        var error = "I'm a failure, I couldn't do it.";
-                        if (data.error) {
-                            error += ' The server said: "' + data.error + '"';
-                        }
-                        client.say(channel, error);
-                    }
-                });
-            });
-        }
-    },
-
-    /* Every bot loves botsnacks. */
-    'botsnack': {
-        func: function(user, channel, message, args) {
-            var replies = [
-                'Yummy!',
-                'Thanks, ' + user + '!',
-                'My favorite!',
-                'Can I have another?',
-                'Tasty!'
-            ];
-            client.say(channel, _.shuffle(replies)[0]);
-        }
-    },
-
     /* Check a user's authorization status. */
     'trust': {
         help: "Check a user's authorization status.",
@@ -253,96 +332,49 @@ var commands = {
         }
     },
 
-    /* Leave the channel */
-    'bye': {
-        help: "Ask the bot to leave the channel.",
-        func: function(user, channel) {
-            client.say(channel, 'Bye!');
-            client.part(channel);
-        }
-    },
-
-    /* Provide a help system.
-     *
-     * To give a command a help message, define a 'help' field in it's object.
-     * If the help field is not present, the command will not be listed.
-     * To give a comand an arguments list, define a 'usage' field in it's object.
-     * If the usage field is not present, the command will not list a usage it's help message.
-     */
-    'help': {
-        help: "This help message.",
-        func: function(user, channel) {
-            var command;
-            var help;
-            var usage;
-
-            say('Available commands:');
-
-            for (command in commands) {
-                help = commands[command].help;
-                usage = commands[command].usage;
-
-                if (help !== undefined) {
-                    if (usage === undefined) {
-                        client.say(channel, '!' + command + ' - ' + help);
-                    } else {
-                        client.say(channel, '!' + command + ' ' + usage + ' - ' + help);
-                    }
-                }
-            }
-        }
-    },
-
     /* Update a user's settings */
-    'update': function(user, channel, message, args) {
-        utils.ifAuthorized(user, channel, function() {
-            var what = args[0];
-            var value = args[1];
-            var who = args[2];
+    'update': {
+        help: "Update the user's settings.",
+        usage: "<name|email|github_handle> <value> [<user>]",
+        func: function(user, channel, message, args) {
+            utils.ifAuthorized(user, channel, function() {
+                var what = args[0];
+                var value = args[1];
+                var who = args[2];
 
 
-            if (who === undefined) {
-                who = user;
-            }
+                if (!who) {
+                    who = user;
+                }
 
-            if (what && value) {
-                var response = api.user.update(user, what, value, who);
+                if (what && value) {
+                    var response = api.user.update(user, what, value, who);
 
-                response.once('ok', function(data) {
-                    client.action(channel, "updates some stuff!");
-                });
+                    response.once('ok', function(data) {
+                        client.action(channel, "updates some stuff!");
+                    });
 
-                response.once('error', function(code, data) {
-                    if (code === 403) {
-                        client.say(channel, "You don't have permission to do " +
-                            "that.");
-                    } else {
-                        var error = "I'm a failure, I couldn't do it.";
-                        if (data.error) {
-                            error += ' The server said: "' + data.error + '"';
+                    response.once('error', function(code, data) {
+                        if (code === 403) {
+                            client.say(channel, "You don't have permission to do " +
+                                "that.");
+                        } else {
+                            var error = "I'm a failure, I couldn't do it.";
+                            if (data.error) {
+                                error += ' The server said: "' + data.error + '"';
+                            }
+                            client.say(channel, error);
                         }
-                        client.say(channel, error);
-                    }
-                });
-            }
-        });
-    },
-
-    /* Post a message in all channels */
-    'announce': function(user, channel, message, args) {
-        _.each(config.irc.channels, function(chan) {
-            if (chan !== channel) {
-                client.say(chan, args.join(' '));
-            }
-        });
+                    });
+                }
+            });
+        }
     },
 
     /* The default action. Return an error. */
     'default': {
-        help: undefined,
-        args: undefined,
         func: function(user, channel, message) {
-            client.say(channel, user + ": Huh? Try !help.");
+            client.say(channel, user + ': Huh? Try !help.');
         }
     }
 };
