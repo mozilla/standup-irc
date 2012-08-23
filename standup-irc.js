@@ -1,5 +1,4 @@
 var _ = require('underscore');
-var http = require('http');
 var irc = require('irc');
 var path = require('path');
 var winston = require('winston');
