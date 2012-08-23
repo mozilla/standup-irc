@@ -223,7 +223,6 @@ var commands = {
                         client.say(channel, "You don't have permission to do " +
                             "that. Did you post that status?");
                     } else {
-                        console.log(data);
                         var error = "I'm a failure, I couldn't do it.";
                         if (data.error) {
                             error += ' The server said: "' + data.error + '"';
@@ -362,7 +361,6 @@ var commands = {
                                 "that.");
                         } else {
                             var error = "I'm a failure, I couldn't do it.";
-                            console.log(data);
                             if (data.error) {
                                 error += ' The server said: "' + data.error + '"';
                             }
