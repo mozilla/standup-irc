@@ -274,10 +274,6 @@ var commands = {
             var help;
             var usage;
 
-            function say(message) {
-                client.say(channel, message);
-            }
-
             say('Available commands:');
 
             for (command in commands) {
@@ -286,9 +282,9 @@ var commands = {
 
                 if (help !== undefined) {
                     if (usage === undefined) {
-                        say('!' + command + ' - ' + help);
+                        client.say(channel, '!' + command + ' - ' + help);
                     } else {
-                        say('!' + command + ' ' + usage + ' - ' + help);
+                        client.say(channel, '!' + command + ' ' + usage + ' - ' + help);
                     }
                 }
             }
