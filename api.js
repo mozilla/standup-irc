@@ -43,8 +43,8 @@ exports.user = {
         var data = {
             user: nick,
             api_key: config.standup.api_key
-        }
+        };
         data[key] = value;
         return utils.request('/api/v1/user/' + user + '/', 'POST', data);
     }
-}
+};
