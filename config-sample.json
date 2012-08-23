@@ -12,5 +12,9 @@
     "log": {
         "console": true,
         "file": null
+    },
+    "pg": {
+        "enabled": true,
+        "connstring": "tcp://user:pass@host/dbname"
     }
 }

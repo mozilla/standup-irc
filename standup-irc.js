@@ -1,6 +1,7 @@
 var _ = require('underscore');
 var irc = require('irc');
 var path = require('path');
+var pg = require('pg');
 var winston = require('winston');
 
 var api = require('./api');
@@ -18,6 +19,9 @@ var defaults = {
     log: {
         console: true,
         file: null
+    },
+    pg: {
+        enabled: false
     }
 };
 
@@ -45,26 +49,51 @@ logger = new (winston.Logger)({
 // Global authentication manager
 authman = new auth.AuthManager();
 
-// This regex matches valid IRC nicks.
+/********** PG Client **********/
+
+// Check if PG is enabled and if so connect
+if (config.pg.enabled) {
+    var pg = require('pg');
+
+    // If no connection string is provided in config then check for an ENV
+    // variable with one.
+    if (!config.pg.connstring) {
+        config.pg.connstring = process.env.DATABASE_URL;
+    }
+
+    if (config.pg.connstring) {
+        var pg_client = new pg.Client(config.pg.connstring);
+        pg_client.connect();
+    }
+}
 
 /********** IRC Client **********/
 
 // Global client
-client = new irc.Client(config.irc.host, config.irc.nick, {
+irc_client = new irc.Client(config.irc.host, config.irc.nick, {
     channels: config.irc.channels
 });
 
 // Connected to IRC server
-client.on('registered', function(message) {
+irc_client.on('registered', function(message) {
     logger.info('Connected to IRC server.');
 
     // Store the nickname assigned by the server
     config.irc.realNick = message.args[0];
     logger.info('Using nickname: ' + config.irc.realNick);
+
+    // Check for additional channels and join
+    if (pg_client) {
+        var query = pg_client.query("SELECT id FROM channels");
+
+        query.on('row', function(row) {
+            irc_client.join(row.id);
+        });
+    }
 });
 
 // Handle errors by dumping them to logging.
-client.on('error', function(error) {
+irc_client.on('error', function(error) {
     // Error 421 comes up a lot on Mozilla servers, but isn't a problem.
     if (error.rawCommand !== '421') {
         return;
@@ -80,7 +109,7 @@ client.on('error', function(error) {
  * - `channel`: The channel the bot is invited to.
  * - `from`: The nick of the user who invited the bot.
  */
-client.on('invite', function(channel, from) {
+irc_client.on('invite', function(channel, from) {
     logger.info('Invited to ' + channel + ' by ' + from + '.');
     commands.goto.func(from, channel, '', [channel]);
 });
@@ -90,7 +119,7 @@ client.on('invite', function(channel, from) {
  * - `user`: The nick of the user getting kicked from.
  * - `by`: The nick of the kicker.
  */
-client.on('kick', function(channel, user, by) {
+irc_client.on('kick', function(channel, user, by) {
     if (user === config.irc.realNick) {
         logger.info('Kicked from ' + channel + ' by ' + by + '.');
         commands['bye'](user, channel);
@@ -104,7 +133,7 @@ client.on('kick', function(channel, user, by) {
  *   those messages anyways.
  * - `message`: The text of the message sent.
  */
-client.on('message', function(user, channel, message) {
+irc_client.on('message', function(user, channel, message) {
     var match, nick, targetMessageRegex;
 
     nick = utils.escapeRegExp(config.irc.realNick);
@@ -135,7 +164,7 @@ client.on('message', function(user, channel, message) {
 });
 
 // Read server notices
-client.on('notice', function(from, to, text) {
+irc_client.on('notice', function(from, to, text) {
     if (from === undefined) {
         logger.info('Service Notice: ' + text);
         from = '';
@@ -154,9 +183,9 @@ var commands = {
         help: "Broadcast a message in all other channels.",
         usage: "<message>",
         func: function(user, channel, message, args) {
-            _.each(client.chans, function(data, chan) {
+            _.each(irc_client.chans, function(data, chan) {
                 if (chan !== channel) {
-                    client.say(chan, args.join(' '));
+                    irc_client.say(chan, args.join(' '));
                 }
             });
         }
@@ -172,7 +201,7 @@ var commands = {
                 'Can I have another?',
                 'Tasty!'
             ];
-            client.say(channel, _.shuffle(replies)[0]);
+            irc_client.say(channel, _.shuffle(replies)[0]);
         }
     },
 
@@ -180,8 +209,13 @@ var commands = {
     'bye': {
         help: "Ask the bot to leave the channel.",
         func: function(user, channel) {
-            client.say(channel, 'Bye!');
-            client.part(channel);
+            irc_client.say(channel, 'Bye!');
+            irc_client.part(channel);
+
+            // Remove the channel from the db
+            if (pg_client) {
+                pg_client.query("DELETE FROM channels WHERE id=$1", [channel]);
+            }
         }
     },
 
@@ -189,8 +223,8 @@ var commands = {
     'chanlist': {
         help: "Get a list of channels that I am in.",
         func: function(user, channel) {
-            client.say(channel, "I'm currently in:");
-            client.say(channel, _.keys(client.chans).sort().join(', '));
+            irc_client.say(channel, "I'm currently in:");
+            irc_client.say(channel, _.keys(irc_client.chans).sort().join(', '));
         }
     },
 
@@ -206,7 +240,7 @@ var commands = {
                 }
                 id = parseInt(id, 10);
                 if (isNaN(id)) {
-                    client.say(channel, '"' + args[0] + '" ' +
+                    irc_client.say(channel, '"' + args[0] + '" ' +
                         'is not a valid status ID.');
                     return;
                 }
@@ -214,20 +248,20 @@ var commands = {
                 var response = api.status.delete(id, user);
 
                 response.once('ok', function(data) {
-                    client.say(channel, 'Ok, status #' + id + ' is no more!');
+                    irc_client.say(channel, 'Ok, status #' + id + ' is no more!');
                 });
 
                 response.once('error', function(code, data) {
                     data = JSON.parse(data);
                     if (code === 403) {
-                        client.say(channel, "You don't have permission to do " +
+                        irc_client.say(channel, "You don't have permission to do " +
                             "that. Did you post that status?");
                     } else {
                         var error = "I'm a failure, I couldn't do it.";
                         if (data.error) {
                             error += ' The server said: "' + data.error + '"';
                         }
-                        client.say(channel, error);
+                        irc_client.say(channel, error);
                     }
                 });
             });
@@ -246,7 +280,15 @@ var commands = {
             }
 
             if (join) {
-                client.join(join);
+                irc_client.join(join);
+            }
+
+            // Add channel to the db
+            if (pg_client) {
+                pg_client.query({
+                    text: 'INSERT INTO channels(id, invited_by) values($1, $2)',
+                    values: [join, user]
+                });
             }
         }
     },
@@ -263,7 +305,7 @@ var commands = {
         func: function(user, channel) {
             var command, help, usage;
 
-            client.say(channel, 'Available commands:');
+            irc_client.say(channel, 'Available commands:');
 
             _.each(_.keys(commands).sort(), function(command) {
                 help = commands[command].help;
@@ -278,7 +320,7 @@ var commands = {
 
                     message.push('- ' + help);
 
-                    client.say(channel, message.join(' '));
+                    irc_client.say(channel, message.join(' '));
                 }
             });
         }
@@ -289,7 +331,7 @@ var commands = {
         help: "A simple presence check.",
         usage: undefined,
         func: function(user, channel, message, args) {
-            client.say(channel, "Pong!");
+            irc_client.say(channel, "Pong!");
         }
     },
 
@@ -307,11 +349,11 @@ var commands = {
                 var response = api.status.create(user, project, status);
 
                 response.once('ok', function(data) {
-                    client.say(channel, 'Ok, submitted status #' + data.id);
+                    irc_client.say(channel, 'Ok, submitted status #' + data.id);
                 });
 
                 response.once('error', function(err, data) {
-                    client.say(channel, 'Uh oh, something went wrong.');
+                    irc_client.say(channel, 'Uh oh, something went wrong.');
                 });
             });
         }
@@ -325,9 +367,9 @@ var commands = {
             var a = authman.checkUser(args);
             a.once('authorization', function(trust) {
                 if (trust) {
-                    client.say(channel, 'I trust ' + args);
+                    irc_client.say(channel, 'I trust ' + args);
                 } else {
-                    client.say(channel, "I don't trust " + args);
+                    irc_client.say(channel, "I don't trust " + args);
                 }
             });
         }
@@ -352,19 +394,19 @@ var commands = {
                     var response = api.user.update(user, what, value, who);
 
                     response.once('ok', function(data) {
-                        client.action(channel, "updates some stuff!");
+                        irc_client.action(channel, "updates some stuff!");
                     });
 
                     response.once('error', function(code, data) {
                         if (code === 403) {
-                            client.say(channel, "You don't have permission to do " +
+                            irc_client.say(channel, "You don't have permission to do " +
                                 "that.");
                         } else {
                             var error = "I'm a failure, I couldn't do it.";
                             if (data.error) {
                                 error += ' The server said: "' + data.error + '"';
                             }
-                            client.say(channel, error);
+                            irc_client.say(channel, error);
                         }
                     });
                 }
@@ -375,7 +417,7 @@ var commands = {
     /* The default action. Return an error. */
     'default': {
         func: function(user, channel, message) {
-            client.say(channel, user + ': Huh? Try !help.');
+            irc_client.say(channel, user + ': Huh? Try !help.');
         }
     }
 };
