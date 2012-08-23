@@ -2,7 +2,7 @@ var _ = require('underscore');
 var http = require('http');
 var events = require('events');
 
-this.request = function(path, method, data, emitter) {
+exports.request = function(path, method, data, emitter) {
     if (data === undefined) {
         data = {};
     }
@@ -50,7 +50,7 @@ this.request = function(path, method, data, emitter) {
     return emitter;
 }
 
-this.ifAuthorized = function(user, channel, callback) {
+exports.ifAuthorized = function(user, channel, callback) {
     var a = authman.checkUser(user);
 
     a.once('authorization', function(trust) {
@@ -65,6 +65,6 @@ this.ifAuthorized = function(user, channel, callback) {
     return a;
 };
 
-this.escapeRegExp = function(str) {
+exports.escapeRegExp = function(str) {
     return str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 }
