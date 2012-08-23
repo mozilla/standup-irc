@@ -2,7 +2,7 @@ var _ = require('underscore');
 var http = require('http');
 var events = require('events');
 
-exports.request = function(path, method, data, emitter) {
+var request = function(path, method, data, emitter) {
     if (data === undefined) {
         data = {};
     }
@@ -49,6 +49,8 @@ exports.request = function(path, method, data, emitter) {
 
     return emitter;
 }
+
+exports.request = request;
 
 exports.ifAuthorized = function(user, channel, callback) {
     var a = authman.checkUser(user);
