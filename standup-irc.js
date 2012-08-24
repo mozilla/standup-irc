@@ -23,7 +23,8 @@ var defaults = {
     },
     pg: {
         enabled: false
-    }
+    },
+    blacklist: []
 };
 
 var existsSync = fs.existsSync || path.existsSync;
@@ -49,9 +50,6 @@ logger = new (winston.Logger)({
     transports: transports
 });
 
-// Global authentication manager
-authman = new auth.AuthManager();
-
 /********** PG Client **********/
 
 // Check if PG is enabled and if so connect
@@ -68,6 +66,14 @@ if (config.pg.enabled) {
         var pg_client = new pg.Client(config.pg.connstring);
         pg_client.connect();
     }
+
+    if (pg_client) {
+        var query = pg_client.query("SELECT id FROM blacklist");
+
+        query.on('row', function(row) {
+            config.blacklist.push(row.id);
+        });
+    }
 }
 
 /********** IRC Client **********/
@@ -76,6 +82,9 @@ if (config.pg.enabled) {
 irc_client = new irc.Client(config.irc.host, config.irc.nick, {
     channels: config.irc.channels
 });
+
+// Global authentication manager
+authman = new auth.AuthManager();
 
 // Connected to IRC server
 irc_client.on('registered', function(message) {
@@ -139,6 +148,10 @@ irc_client.on('kick', function(channel, user, by) {
 irc_client.on('message', function(user, channel, message) {
     var match, nick, targetMessageRegex;
 
+    if (config.blacklist.indexOf(user) !== -1) {
+        return false;
+    }
+
     nick = utils.escapeRegExp(config.irc.realNick);
     targetMessageRegex = new RegExp('^' + nick + '[:,]\\s*?(.*)$');
 
@@ -189,6 +202,36 @@ var commands = {
             _.each(irc_client.chans, function(data, chan) {
                 if (chan !== channel) {
                     irc_client.say(chan, args.join(' '));
+                }
+            });
+        }
+    },
+
+    /* Blacklist a user to ignore their messages */
+    'blacklist': {
+        help: "Blacklist a user or show a list of blacklisted users.",
+        usage: "[<user>]",
+        func: function(user, channel, message, args) {
+            utils.ifAuthorized(user, channel, function() {
+                var nick = args[0];
+
+                if (nick) {
+                    if (config.blacklist.indexOf(nick) === -1) {
+                        pg_client.query("INSERT INTO blacklist" +
+                            "(id, blacklisted_by) values " +
+                            "('" + nick + "', '" + user + "')");
+
+                        config.blacklist.push(nick);
+
+                        irc_client.action(channel, 'Ignores ' + nick);
+                    }
+                } else {
+                    if (config.blacklist.length > 0) {
+                        irc_client.say(channel, 'Blacklisted users:');
+                        irc_client.say(channel, config.blacklist.join(', '));
+                    } else {
+                        irc_client.say(channel, 'No blacklisted users.');
+                    }
                 }
             });
         }
@@ -257,8 +300,8 @@ var commands = {
                 response.once('error', function(code, data) {
                     data = JSON.parse(data);
                     if (code === 403) {
-                        irc_client.say(channel, "You don't have permission to do " +
-                            "that. Did you post that status?");
+                        irc_client.say(channel, "You don't have permission " +
+                            " to do that. Did you post that status?");
                     } else {
                         var error = "I'm a failure, I couldn't do it.";
                         if (data.error) {
@@ -402,8 +445,8 @@ var commands = {
 
                     response.once('error', function(code, data) {
                         if (code === 403) {
-                            irc_client.say(channel, "You don't have permission to do " +
-                                "that.");
+                            irc_client.say(channel, "You don't have " +
+                                "permission to do that.");
                         } else {
                             var error = "I'm a failure, I couldn't do it.";
                             if (data.error) {
@@ -412,6 +455,22 @@ var commands = {
                             irc_client.say(channel, error);
                         }
                     });
+                }
+            });
+        }
+    },
+
+    'whitelist': {
+        help: "Whitelist a user.",
+        usage: "<user>",
+        func: function(user, channel, message, args) {
+            utils.ifAuthorized(user, channel, function() {
+                var nick = args[0];
+
+                if (nick) {
+                    config.blacklist = _.without(config.blacklist, nick);
+                    pg_client.query("DELETE FROM blacklist WHERE id='" + nick + "'");
+                    irc_client.say('Will do!');
                 }
             });
         }
