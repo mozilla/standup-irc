@@ -49,3 +49,27 @@ function eq(a, b, name) {
     actual = utils.parseArgs(args);
     eq(expected, actual, "Bare apostrophe");
 })();
+
+
+(function test_escapeUnicode() {
+    var actual;
+    var expected;
+    var obj;
+
+    obj = {foo: 'bar'};
+    actual = utils.jsonStringifyUnicode(obj);
+    expected = JSON.stringify(obj);
+    eq(expected, actual, "Basic JSON");
+
+    actual = utils.jsonStringifyUnicode('I like π', true);
+    expected = '"I like π"';
+    eq(expected, actual, "Unicode mode");
+
+    actual = utils.jsonStringifyUnicode('I like π', false);
+    expected = '"I like \\u03c0"';
+    eq(expected, actual, "Escape mode");
+
+    actual = utils.jsonStringifyUnicode('I like π');
+    expected = '"I like \\u03c0"';
+    eq(expected, actual, "Default mode");
+})();
