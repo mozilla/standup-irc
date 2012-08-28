@@ -107,10 +107,6 @@ exports.parseArgs = function(argList) {
 };
 
 exports.jsonStringifyUnicode = function(str, emitUnicode) {
-    if (emitUnicode === undefined) {
-        emitUnicoe = false;
-    }
-
     var json = JSON.stringify(str);
     if (!emitUnicode) {
         json = json.replace(/[\u007f-\uffff]/g, function(c) {
