@@ -123,6 +123,25 @@ exports.parseArgs = function(argList) {
     return args;
 };
 
+exports.respond = function(message, user, channel, commands) {
+    if (message[0] === '!') {
+        // message = "!cmd arg1 arg2 arg3"
+        var cmd_name = message.split(' ')[0].slice(1);
+        var args = message.split(' ').slice(1);
+        args = this.parseArgs(args);
+        var cmd = commands[cmd_name] || commands['default'];
+        cmd.func(user, channel, message, args);
+    } else {
+        if (message.toLowerCase() === 'botsnack') {
+            // Special case for botsnack
+            commands.botsnack.func(user, channel, message, []);
+        } else {
+            // If they didn't ask for a specific command, post a status.
+            commands.status.func(user, channel, message, [channel, message]);
+        }
+    }
+}
+
 exports.talkback = function(channel, user, message) {
     if (channelSetting(channel, 'talkback') === 'quiet') {
        channel = user;

@@ -8,15 +8,17 @@ exports.status = {
      * - `content`: The text of the status.
      */
     create: function(user, project, content) {
-        if (project[0] === '#') {
-            project = project.slice(1);
-        }
         var data = {
             user: user,
-            project: project,
             content: content,
             api_key: config.standup.api_key
         };
+        if (project !== null) {
+            if (project[0] === '#') {
+                project = project.slice(1);
+            }
+            data.project = project;
+        }
         return utils.request('/api/v1/status/', 'POST', data);
     },
 

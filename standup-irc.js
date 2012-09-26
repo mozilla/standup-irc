@@ -27,8 +27,6 @@ var defaults = {
     blacklist: []
 };
 
-
-
 var existsSync = fs.existsSync || path.existsSync;
 
 // Global config.
@@ -167,23 +165,7 @@ irc_client.on('message', function(user, channel, message) {
 
     if (match) {
         message = match[1].trim();
-
-        if (message[0] === '!') {
-            // message = "!cmd arg1 arg2 arg3"
-            var cmd_name = message.split(' ')[0].slice(1);
-            var args = message.split(' ').slice(1);
-            args = utils.parseArgs(args);
-            var cmd = commands[cmd_name] || commands['default'];
-            cmd.func(user, channel, message, args);
-        } else {
-            if (message.toLowerCase() === 'botsnack') {
-                // Special case for botsnack
-                commands.botsnack.func(user, channel, message, []);
-            } else {
-                // If they didn't ask for a specific command, post a status.
-                commands.status.func(user, channel, message, [channel, message]);
-            }
-        }
+        utils.respond(message, user, channel, commands);
     }
 });
 
@@ -199,6 +181,11 @@ irc_client.on('notice', function(from, to, text) {
     if (from === 'nickserv') {
         authman.notice(from, text);
     }
+});
+
+// React to private messages
+irc_client.on('pm', function(user, message) {
+    utils.respond(message, user, user, commands);
 });
 
 var commands = {
@@ -394,9 +381,13 @@ var commands = {
         usage: "<project> status message",
         func: function(user, channel, message, args) {
             utils.ifAuthorized(user, channel, function() {
-                var project = args[0];
-                if (project[0] === '#') {
-                    project = project.slice(1);
+                var project = null;
+
+                if (user !== channel) {
+                    project = args[0];
+                    if (project[0] === '#') {
+                        project = project.slice(1);
+                    }
                 }
 
                 var status = args.slice(1).join(' ');
