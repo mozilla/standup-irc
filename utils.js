@@ -2,6 +2,9 @@ var _ = require('underscore');
 var http = require('http');
 var events = require('events');
 
+// Channel settings
+var channel_settings = {};
+
 var request = function(path, method, data, emitter, unicode) {
     if (data === undefined) {
         data = {};
@@ -52,6 +55,20 @@ var request = function(path, method, data, emitter, unicode) {
 
 exports.request = request;
 
+var channelSetting = function(channel, name, value) {
+    if (channel_settings[channel] === undefined) {
+        channel_settings[channel] = {};
+    }
+
+    if (value === undefined) {
+        return channel_settings[channel][name];
+    } else {
+        channel_settings[channel][name] = value;
+    }
+}
+
+exports.channelSetting = channelSetting;
+
 exports.ifAuthorized = function(user, channel, callback) {
     var a = authman.checkUser(user);
 
@@ -59,7 +76,7 @@ exports.ifAuthorized = function(user, channel, callback) {
         if (trust) {
             callback();
         } else {
-            client.say(channel, "I don't trust you, " + user + ", " +
+            irc_client.say(channel, "I don't trust you, " + user + ", " +
                                 "are you identified with nickserv?");
         }
     });
@@ -105,6 +122,14 @@ exports.parseArgs = function(argList) {
     });
     return args;
 };
+
+exports.talkback = function(channel, user, message) {
+    if (channelSetting(channel, 'talkback') === 'quiet') {
+       channel = user;
+    }
+
+    irc_client.say(channel, message);
+}
 
 exports.jsonStringifyUnicode = function(str, emitUnicode) {
     var json = JSON.stringify(str);

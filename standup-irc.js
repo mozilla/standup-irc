@@ -27,6 +27,8 @@ var defaults = {
     blacklist: []
 };
 
+
+
 var existsSync = fs.existsSync || path.existsSync;
 
 // Global config.
@@ -100,6 +102,12 @@ irc_client.on('registered', function(message) {
 
         query.on('row', function(row) {
             irc_client.join(row.id);
+        });
+
+        var query = pg_client.query("SELECT channel, name, value FROM channel_settings");
+
+        query.on('row', function(row) {
+            utils.channelSetting(row.channel, row.name, row.value);
         });
     }
 });
@@ -227,10 +235,10 @@ var commands = {
                     }
                 } else {
                     if (config.blacklist.length > 0) {
-                        irc_client.say(channel, 'Blacklisted users:');
-                        irc_client.say(channel, config.blacklist.join(', '));
+                        utils.talkback(channel, user, 'Blacklisted users:');
+                        utils.talkback(channel, user, config.blacklist.join(', '));
                     } else {
-                        irc_client.say(channel, 'No blacklisted users.');
+                        utils.talkback(channel, user, 'No blacklisted users.');
                     }
                 }
             });
@@ -269,8 +277,8 @@ var commands = {
     'chanlist': {
         help: "Get a list of channels that I am in.",
         func: function(user, channel) {
-            irc_client.say(channel, "I'm currently in:");
-            irc_client.say(channel, _.keys(irc_client.chans).sort().join(', '));
+            utils.talkback(channel, user, "I'm currently in:");
+            utils.talkback(channel, user, _.keys(irc_client.chans).sort().join(', '));
         }
     },
 
@@ -286,7 +294,7 @@ var commands = {
                 }
                 id = parseInt(id, 10);
                 if (isNaN(id)) {
-                    irc_client.say(channel, '"' + args[0] + '" ' +
+                    utils.talkback(channel, user, '"' + args[0] + '" ' +
                         'is not a valid status ID.');
                     return;
                 }
@@ -294,20 +302,20 @@ var commands = {
                 var response = api.status.delete(id, user);
 
                 response.once('ok', function(data) {
-                    irc_client.say(channel, 'Ok, status #' + id + ' is no more!');
+                    utils.talkback(channel, user, 'Ok, status #' + id + ' is no more!');
                 });
 
                 response.once('error', function(code, data) {
                     data = JSON.parse(data);
                     if (code === 403) {
-                        irc_client.say(channel, "You don't have permission " +
+                        utils.talkback(channel, user, "You don't have permission " +
                             " to do that. Did you post that status?");
                     } else {
                         var error = "I'm a failure, I couldn't do it.";
                         if (data.error) {
                             error += ' The server said: "' + data.error + '"';
                         }
-                        irc_client.say(channel, error);
+                        utils.talkback(channel, user, error);
                     }
                 });
             });
@@ -351,7 +359,7 @@ var commands = {
         func: function(user, channel) {
             var command, help, usage;
 
-            irc_client.say(channel, 'Available commands:');
+            irc_client.say(user, 'Available commands:');
 
             _.each(_.keys(commands).sort(), function(command) {
                 help = commands[command].help;
@@ -366,7 +374,7 @@ var commands = {
 
                     message.push('- ' + help);
 
-                    irc_client.say(channel, message.join(' '));
+                    irc_client.say(user, message.join(' '));
                 }
             });
         }
@@ -395,13 +403,49 @@ var commands = {
                 var response = api.status.create(user, project, status);
 
                 response.once('ok', function(data) {
-                    irc_client.say(channel, 'Ok, submitted status #' + data.id);
+                    utils.talkback(channel, user, 'Ok, submitted status #' + data.id);
                 });
 
                 response.once('error', function(err, data) {
-                    irc_client.say(channel, 'Uh oh, something went wrong.');
+                    utils.talkback(channel, user, 'Uh oh, something went wrong.');
                 });
             });
+        }
+    },
+
+    /* Get/set the channel talkback setting */
+    'talkback': {
+        help: "Per channel setting to determine if the bot should PM responses.",
+        usage: "[<loud|quiet>]",
+        func:  function(user, channel, message, args) {
+            if (!args[0]) {
+                var msg = 'Talkback is currently: ' +
+                irc_client.say(channel, utils.channelSetting(channel, 'talkback'));
+            } else if ((args[0] === 'loud') || (args[0] === 'quiet')) {
+                if (args[0] === 'loud') {
+                    irc_client.say(channel, 'I will respond in the channel from now on.');
+                } else {
+                    irc_client.say(channel, 'I will only PM users now.');
+                }
+
+                utils.channelSetting(channel, 'talkback', args[0]);
+
+                var query = pg_client.query({
+                        text: "DELETE FROM channel_settings WHERE " +
+                              "channel=$1 AND name='talkback'",
+                        values: [channel]
+                    });
+
+                query.on('end', function() {
+                    pg_client.query({
+                            text: "INSERT INTO channel_settings(channel, " +
+                                  "name, value) values($1, 'talkback', $2)",
+                            values: [channel, args[0]]
+                        });
+                });
+            } else {
+                irc_client.say(channel, 'Does not compute!');
+            }
         }
     },
 
@@ -413,9 +457,9 @@ var commands = {
             var a = authman.checkUser(args);
             a.once('authorization', function(trust) {
                 if (trust) {
-                    irc_client.say(channel, 'I trust ' + args);
+                    utils.talkback(channel, user, 'I trust ' + args);
                 } else {
-                    irc_client.say(channel, "I don't trust " + args);
+                    utils.talkback(channel, user, "I don't trust " + args);
                 }
             });
         }
@@ -470,7 +514,7 @@ var commands = {
                 if (nick) {
                     config.blacklist = _.without(config.blacklist, nick);
                     pg_client.query("DELETE FROM blacklist WHERE id='" + nick + "'");
-                    irc_client.say('Will do!');
+                    utils.talkback(channel, user, 'Will do!');
                 }
             });
         }
