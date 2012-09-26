@@ -419,8 +419,9 @@ var commands = {
         usage: "[<loud|quiet>]",
         func:  function(user, channel, message, args) {
             if (!args[0]) {
-                var msg = 'Talkback is currently: ' +
-                irc_client.say(channel, utils.channelSetting(channel, 'talkback'));
+                var tb = utils.channelSetting(channel, 'talkback');
+                var msg = 'Talkback is currently: ' + (tb ? tb : 'loud');
+                irc_client.say(channel, msg);
             } else if ((args[0] === 'loud') || (args[0] === 'quiet')) {
                 if (args[0] === 'loud') {
                     irc_client.say(channel, 'I will respond in the channel from now on.');
