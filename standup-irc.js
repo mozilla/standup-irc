@@ -376,6 +376,25 @@ var commands = {
         }
     },
 
+    /* Comment on a status */
+    're': {
+        help: "Comment on a status",
+        usage: "<id> <comment>",
+        func: function(user, channel, message, args) {
+            utils.ifAuthorized(user, channel, function() {
+                var response = api.status.create(user, null, args.slice(1).join(' '), parseInt(args[0]));
+
+                response.once('ok', function(data) {
+                    utils.talkback(channel, user, 'Ok, commented on #' + args[0] + ' with #' + data.id);
+                });
+
+                response.once('error', function(err, data) {
+                    utils.talkback(channel, user, 'Uh oh, something went wrong.');
+                });
+            });
+        }
+    },
+
     /* Create a status. */
     'status': {
         usage: "<project> status message",
@@ -515,6 +534,7 @@ var commands = {
     /* The default action. Return an error. */
     'default': {
         func: function(user, channel, message) {
+            logger.info('Invalid command: ' + message);
             irc_client.say(channel, user + ': Huh? Try !help.');
         }
     }
