@@ -348,8 +348,6 @@ var commands = {
 
             irc_client.say(user, 'Available commands:');
 
-            irc_client.say(user, '!<id> <comment> - Comment on a particular status.')
-
             _.each(_.keys(commands).sort(), function(command) {
                 help = commands[command].help;
                 usage = commands[command].usage;
