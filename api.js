@@ -6,7 +6,7 @@ exports.status = {
      * - `user`: The user that submitted the status.
      * - `project`: The project associated with the status.
      * - `content`: The text of the status.
-     * - `reply_to`: The ID of the status being replied to
+     * - `reply_to`: (Optional) The ID of the status being replied to
      */
     create: function(user, project, content, reply_to) {
         var data = {
