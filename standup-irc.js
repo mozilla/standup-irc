@@ -382,7 +382,12 @@ var commands = {
         usage: "<id> <comment>",
         func: function(user, channel, message, args) {
             utils.ifAuthorized(user, channel, function() {
-                var reply_to = parseInt(args[0]);
+                var reply_to = args[0];
+
+                if (reply_to[0] === '#') {
+                    reply_to = reply_to.slice(1);
+                }
+
                 var response = api.status.create(user, null, args.slice(1).join(' '), reply_to);
 
                 response.once('ok', function(data) {
