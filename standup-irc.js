@@ -269,31 +269,6 @@ var commands = {
         }
     },
 
-    'comment': {
-        func: function(user, channel, message, reply_to) {
-            utils.ifAuthorized(user, channel, function() {
-                var project = null;
-
-                if (user !== channel) {
-                    project = args[0];
-                    if (project[0] === '#') {
-                        project = project.slice(1);
-                    }
-                }
-
-                var response = api.status.create(user, project, message, reply_to);
-
-                response.once('ok', function(data) {
-                    utils.talkback(channel, user, 'Ok, commented on #' + reply_to + ' with #' + data.id);
-                });
-
-                response.once('error', function(err, data) {
-                    utils.talkback(channel, user, 'Uh oh, something went wrong.');
-                });
-            });
-        }
-    },
-
     /* Delete a status by id number. */
     'delete': {
         help: "Delete a status by id.",
@@ -400,6 +375,25 @@ var commands = {
         usage: undefined,
         func: function(user, channel, message, args) {
             irc_client.say(channel, "Pong!");
+        }
+    },
+
+    /* Comment on a status */
+    're': {
+        help: "Comment on a status",
+        usage: "<id> <comment>",
+        func: function(user, channel, message, args) {
+            utils.ifAuthorized(user, channel, function() {
+                var response = api.status.create(user, null, args.slice(1).join(' '), parseInt(args[0]));
+
+                response.once('ok', function(data) {
+                    utils.talkback(channel, user, 'Ok, commented on #' + args[0] + ' with #' + data.id);
+                });
+
+                response.once('error', function(err, data) {
+                    utils.talkback(channel, user, 'Uh oh, something went wrong.');
+                });
+            });
         }
     },
 
