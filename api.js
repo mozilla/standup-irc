@@ -6,13 +6,17 @@ exports.status = {
      * - `user`: The user that submitted the status.
      * - `project`: The project associated with the status.
      * - `content`: The text of the status.
+     * - `reply_to`: The ID of the status being replied to
      */
-    create: function(user, project, content) {
+    create: function(user, project, content, reply_to) {
         var data = {
             user: user,
             content: content,
             api_key: config.standup.api_key
         };
+        if (reply_to) {
+            data.reply_to = reply_to;
+        }
         if (project !== null) {
             if (project[0] === '#') {
                 project = project.slice(1);

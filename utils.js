@@ -128,9 +128,13 @@ exports.respond = function(message, user, channel, commands) {
         // message = "!cmd arg1 arg2 arg3"
         var cmd_name = message.split(' ')[0].slice(1);
         var args = message.split(' ').slice(1);
-        args = this.parseArgs(args);
-        var cmd = commands[cmd_name] || commands['default'];
-        cmd.func(user, channel, message, args);
+        if (_.isFinite(parseInt(cmd_name)) && (parseInt(cmd_name) == cmd_name)) {
+            commands['comment'].func(user, channel, args.join(' '), cmd_name);
+        } else {
+            args = this.parseArgs(args);
+            var cmd = commands[cmd_name] || commands['default'];
+            cmd.func(user, channel, message, args);
+        }
     } else {
         if (message.toLowerCase() === 'botsnack') {
             // Special case for botsnack

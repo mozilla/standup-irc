@@ -269,6 +269,31 @@ var commands = {
         }
     },
 
+    'comment': {
+        func: function(user, channel, message, reply_to) {
+            utils.ifAuthorized(user, channel, function() {
+                var project = null;
+
+                if (user !== channel) {
+                    project = args[0];
+                    if (project[0] === '#') {
+                        project = project.slice(1);
+                    }
+                }
+
+                var response = api.status.create(user, project, message, reply_to);
+
+                response.once('ok', function(data) {
+                    utils.talkback(channel, user, 'Ok, commented on #' + reply_to + ' with #' + data.id);
+                });
+
+                response.once('error', function(err, data) {
+                    utils.talkback(channel, user, 'Uh oh, something went wrong.');
+                });
+            });
+        }
+    },
+
     /* Delete a status by id number. */
     'delete': {
         help: "Delete a status by id.",
@@ -347,6 +372,8 @@ var commands = {
             var command, help, usage;
 
             irc_client.say(user, 'Available commands:');
+
+            irc_client.say(user, '!<id> <comment> - Comment on a particular status.')
 
             _.each(_.keys(commands).sort(), function(command) {
                 help = commands[command].help;
@@ -515,6 +542,7 @@ var commands = {
     /* The default action. Return an error. */
     'default': {
         func: function(user, channel, message) {
+            logger.info('Invalid command: ' + message);
             irc_client.say(channel, user + ': Huh? Try !help.');
         }
     }
