@@ -382,10 +382,11 @@ var commands = {
         usage: "<id> <comment>",
         func: function(user, channel, message, args) {
             utils.ifAuthorized(user, channel, function() {
-                var response = api.status.create(user, null, args.slice(1).join(' '), parseInt(args[0]));
+                var reply_to = parseInt(args[0]);
+                var response = api.status.create(user, null, args.slice(1).join(' '), reply_to);
 
                 response.once('ok', function(data) {
-                    utils.talkback(channel, user, 'Ok, commented on #' + args[0] + ' with #' + data.id);
+                    utils.talkback(channel, user, 'Ok, commented on #' + reply_to + ' with #' + data.id);
                 });
 
                 response.once('error', function(err, data) {
