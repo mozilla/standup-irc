@@ -16,6 +16,7 @@ var request = function(path, method, data, emitter, unicode) {
         path: path,
         method: method,
         headers: {
+            'accept': 'application/json',
             'content-type': 'application/json',
             'content-length': body.length
         }
