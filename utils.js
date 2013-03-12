@@ -125,7 +125,9 @@ exports.parseArgs = function(argList) {
 };
 
 exports.respond = function(message, user, channel, commands) {
-    if (message[0] === '!') {
+    if (message === '') {
+        exports.talkback(channel, user, 'Whatcha talkin about, ' + user + '?');
+    } else if (message[0] === '!') {
         // message = "!cmd arg1 arg2 arg3"
         var cmd_name = message.split(' ')[0].slice(1);
         var args = message.split(' ').slice(1);
