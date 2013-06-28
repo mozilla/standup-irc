@@ -419,7 +419,21 @@ var commands = {
                 var response = api.status.create(user, project, status);
 
                 response.once('ok', function(data) {
-                    utils.talkback(channel, user, 'Ok, submitted status #' + data.id);
+                    var msg;
+
+                    var user_url = 'http://' + config.standup.host;
+                    if (config.standup.port != 80) {
+                        user_url += ':' + config.standup.port;
+                    }
+                    user_url += '/user/' + user;
+
+                    if (Math.random() < 0.97) {
+                        msg = 'Ok, submitted ';
+                    } else {
+                        msg = 'Okeeday, meesa submittin ';
+                    }
+                    msg += 'status #' + data.id + ' for ' + user_url;
+                    utils.talkback(channel, user, msg);
                 });
 
                 response.once('error', function(err, data) {
