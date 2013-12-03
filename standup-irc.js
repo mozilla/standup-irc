@@ -188,6 +188,13 @@ irc_client.on('pm', function(user, message) {
     utils.respond(message, user, user, commands);
 });
 
+// React to users quitting the IRC server
+irc_client.on('quit', function(user) {
+    if (user == config.irc.nick) {
+        irc_client.send('NICK', config.irc.nick);
+    }
+});
+
 var commands = {
     /* Post a message in all channels */
     'announce': {
