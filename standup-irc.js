@@ -195,6 +195,14 @@ irc_client.on('quit', function(user) {
     }
 });
 
+// Update bot's perception of its own nick, if it changes
+// (likely triggered by ping timeout of the intended nick, see above)
+irc_client.on('nick', function(oldnick, newnick, channels, message) {
+    if (oldnick == config.irc.realNick) {
+        config.irc.realNick = newnick;
+    }
+});
+
 var commands = {
     /* Post a message in all channels */
     'announce': {
