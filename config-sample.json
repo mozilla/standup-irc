@@ -8,6 +8,9 @@
         "host": "irc.server.com",
         "channels": ["#channel1", "#channel2"],
         "nick": "standup"
+        "password": "password_for_nick", // If this key exists, the bot will try to identify with nickserv
+        "ssl": false,
+        "port": 6667 // 6697 for ssl
     },
     "log": {
         "console": true,

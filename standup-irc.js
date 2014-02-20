@@ -80,7 +80,9 @@ if (config.pg.enabled) {
 
 // Global client
 irc_client = new irc.Client(config.irc.host, config.irc.nick, {
-    channels: config.irc.channels
+    channels: config.irc.channels,
+    port: config.irc.port,
+    secure: config.irc.ssl
 });
 
 // Global authentication manager
@@ -93,6 +95,16 @@ irc_client.on('registered', function(message) {
     // Store the nickname assigned by the server
     config.irc.realNick = message.args[0];
     logger.info('Using nickname: ' + config.irc.realNick);
+
+});
+
+// Wait for message of the day and decide whether we want to register our nick.
+irc_client.addListener('motd', function (motd) {
+    logger.info('Seen MOTD');
+    if (config.irc.password) {
+        logger.info('Identifying with Nickserv');
+        irc_client.say('nickserv', 'identify ' + config.irc.password);
+    }
 
     // Check for additional channels and join
     if (pg_client) {
