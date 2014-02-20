@@ -550,6 +550,121 @@ var commands = {
         }
     },
 
+    'mkteam': {
+        help: "Create a new team.",
+        usage: "<slug> [<name>]",
+        func: function(user, channel, message, args) {
+            utils.ifAuthorized(user, channel, function() {
+                var slug = args[0];
+                var name = args[1];
+
+                if (slug) {
+                    var response = api.team.create(slug, name);
+
+                    response.once('ok', function(data) {
+                        irc_client.say(channel, "Team created!");
+                    });
+
+                    response.once('error', function(code, data) {
+                        var error = "I'm a failure, I couldn't do it.";
+                        if (data.error) {
+                            error += ' The server said: "' + data.error + '"';
+                        }
+                        irc_client.say(channel, error);
+                    });
+                }
+            });
+        }
+    },
+
+    'rmteam': {
+        help: "Remove a team.",
+        usage: "<slug>",
+        func: function(user, channel, message, args) {
+            utils.ifAuthorized(user, channel, function() {
+                var slug = args[0];
+
+                if (slug) {
+                    var response = api.team.remove(slug);
+
+                    response.once('ok', function(data) {
+                        irc_client.say(channel, "Team was deleted.");
+                    });
+
+                    response.once('error', function(code, data) {
+                        var error = "I'm a failure, I couldn't do it.";
+                        if (data.error) {
+                            error += ' The server said: "' + data.error + '"';
+                        }
+                        irc_client.say(channel, error);
+                    });
+                }
+            });
+        }
+    },
+
+    'jointeam': {
+        help: "Join or add another user to a team.",
+        usage: "<slug> [<user>]",
+        func: function(user, channel, message, args) {
+            utils.ifAuthorized(user, channel, function() {
+                var slug = args[0];
+                var who = args[1];
+
+                if (!who) {
+                    who = user;
+                }
+
+                if (slug) {
+                    var response = api.team.add_member(slug, user);
+
+                    response.once('ok', function(data) {
+                        irc_client.say(channel, who + " joined the '" + "' team.");
+                    });
+
+                    response.once('error', function(code, data) {
+                        var error = "I'm a failure, I couldn't do it.";
+                        if (data.error) {
+                            error += ' The server said: "' + data.error + '"';
+                        }
+                        irc_client.say(channel, error);
+                    });
+                }
+            });
+        }
+    },
+
+    'leaveteam': {
+        help: "Leave or remove another user from a team.",
+        usage: "<slug> [<user>]",
+        func: function(user, channel, message, args) {
+            utils.ifAuthorized(user, channel, function() {
+                var slug = args[0];
+                var who = args[1];
+
+                if (!who) {
+                    who = user;
+                }
+
+                if (slug) {
+                    var response = api.team.remove_member(slug, user);
+
+                    response.once('ok', function(data) {
+                        irc_client.say(channel, who + " joined the '" + "' team.");
+                    });
+
+                    response.once('error', function(code, data) {
+                        var error = "I'm a failure, I couldn't do it.";
+                        if (data.error) {
+                            error += ' The server said: "' + data.error + '"';
+                        }
+                        irc_client.say(channel, error);
+                    });
+                }
+            });
+        }
+    },
+
     'whitelist': {
         help: "Whitelist a user.",
         usage: "<user>",
