@@ -141,7 +141,6 @@ var v2 = {
             });
         });
 
-        req.end(body);
         req.once('error', function(e) {
             logger.error(options.host + ':' + options.port + options.path +
                 ': ' + JSON.stringify(data));
