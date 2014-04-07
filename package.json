@@ -20,7 +20,11 @@
         "node": "0.6.18",
         "npm": "1.1.32"
     },
+    "scripts": {
+        "test": "node test.js",
+        "start": "node standup-irc.js"
+    },
     "bin": {
-        "standup-irc": "./standup-irc.js"
+        "standup-irc": "node standup-irc.js"
     }
 }
