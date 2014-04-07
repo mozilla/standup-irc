@@ -70,7 +70,7 @@ exports.team = {
             slug: slug,
             name: name,
             api_key: config.standup.api_key
-        }
+        };
         return v2.post('/teams/create.json', data);
     },
 
@@ -81,7 +81,7 @@ exports.team = {
         var data = {
             slug: slug,
             api_key: config.standup.api_key
-        }
+        };
         return v2.post('/teams/destroy.json', data);
     },
 
@@ -94,7 +94,7 @@ exports.team = {
             slug: slug,
             screen_name: user,
             api_key: config.standup.api_key
-        }
+        };
         return v2.post('/teams/members/create.json', data);
     },
 
@@ -107,10 +107,10 @@ exports.team = {
             slug: slug,
             screen_name: user,
             api_key: config.standup.api_key
-        }
+        };
         return v2.post('/teams/members/destroy.json', data);
     }
-}
+};
 
 var v2 = {
     _url: function(endpoint) {
@@ -136,7 +136,7 @@ var v2 = {
                     var json = JSON.parse(resp_data);
                     emitter.emit('ok', json);
                 } else if (res.statusCode === 301) {
-                    request(res.headers.location, method, data, emitter);
+                   v2.request(res.headers.location, options.method, options.data, emitter);
                 } else {
                     emitter.emit('error', res.statusCode, resp_data);
                 }
@@ -144,8 +144,8 @@ var v2 = {
         });
 
         req.once('error', function(e) {
-            logger.error(options.host + ':' + options.port + options.path +
-                ': ' + JSON.stringify(data));
+            global.logger.error(options.host + ':' + options.port + options.path +
+                ': ' + JSON.stringify(options.data));
             emitter.emit('error', String(e));
         });
 
@@ -153,10 +153,10 @@ var v2 = {
     },
 
     request: function(endpoint, method, data, emitter) {
-        if (method == 'POST') {
-            v2.post(endpoint, data, emitter)
+        if (method === 'POST') {
+            v2.post(endpoint, data, emitter);
         } else {
-            v2.get(endpoint, data, emitter)
+            v2.get(endpoint, data, emitter);
         }
     },
 
@@ -189,8 +189,8 @@ var v2 = {
             method: 'GET'
         };
 
-        return v2._makeRequest(options, emitter)
+        return v2._makeRequest(options, emitter);
     }
-}
+};
 
 exports.v2 = v2;

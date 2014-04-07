@@ -51,7 +51,7 @@ AuthManager.prototype.checkUser = function(nick) {
 
 AuthManager.prototype._askNickserv = function(nick) {
     var msg = 'status ' + nick;
-    irc_client.say('nickserv', msg);
+    global.irc_client.say('nickserv', msg);
 };
 
 exports.AuthManager = AuthManager;

@@ -1,6 +1,6 @@
-assert = require('assert');
+var assert = require('assert');
 
-utils = require('./utils');
+var utils = require('./utils');
 
 function eq(a, b, name) {
     var expected = JSON.stringify(a);
@@ -17,7 +17,8 @@ function eq(a, b, name) {
     args = ["hello", "world"];
     expected = args;
     actual = utils.parseArgs(args);
-    eq(expected, actual, "noop");
+    eq(expected, actual, "noop")t diff
+    ;
 
     // Basic quotes - single
     args = ["one", "'two", "which", "is", "quoted'", "three"];

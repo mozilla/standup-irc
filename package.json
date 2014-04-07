@@ -26,5 +26,8 @@
     },
     "bin": {
         "standup-irc": "node standup-irc.js"
+    },
+    "devDependencies": {
+        "jshint": "^2.5.0"
     }
 }

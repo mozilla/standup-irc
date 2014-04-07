@@ -42,7 +42,7 @@ var request = function(path, method, data, emitter, unicode) {
             } else if (res.statusCode === 301) {
                 request(res.headers.location, method, data, emitter);
             } else {
-                logger.error(options.host + ':' + options.port + options.path +
+                global.logger.error(options.host + ':' + options.port + options.path +
                              ': ' + res.statusCode + ' ' +
                              JSON.stringify(resp_data));
                 emitter.emit('error', res.statusCode, resp_data);
@@ -51,7 +51,7 @@ var request = function(path, method, data, emitter, unicode) {
     });
     req.end(body);
     req.once('error', function(e) {
-        logger.error(options.host + ':' + options.port + options.path +
+        global.logger.error(options.host + ':' + options.port + options.path +
                      ': ' + JSON.stringify(data));
         emitter.emit('error', String(e));
     });
@@ -71,18 +71,18 @@ var channelSetting = function(channel, name, value) {
     } else {
         channel_settings[channel][name] = value;
     }
-}
+};
 
 exports.channelSetting = channelSetting;
 
 exports.ifAuthorized = function(user, channel, callback) {
-    var a = authman.checkUser(user);
+    var a = global.authman.checkUser(user);
 
     a.once('authorization', function(trust) {
         if (trust) {
             callback();
         } else {
-            irc_client.say(channel, "I don't trust you, " + user + ", " +
+            global.irc_client.say(channel, "I don't trust you, " + user + ", " +
                                 "are you identified with nickserv?");
         }
     });
@@ -148,15 +148,15 @@ exports.respond = function(message, user, channel, commands) {
             commands.status.func(user, channel, message, [channel, message]);
         }
     }
-}
+};
 
 exports.talkback = function(channel, user, message) {
     if (channelSetting(channel, 'talkback') === 'quiet') {
        channel = user;
     }
 
-    irc_client.say(channel, message);
-}
+    global.irc_client.say(channel, message);
+};
 
 exports.jsonStringifyUnicode = function(str, emitUnicode) {
     var json = JSON.stringify(str);

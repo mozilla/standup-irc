@@ -21,7 +21,7 @@ if (config.log.console) {
     transports.push(new (winston.transports.Console)());
 }
 // Global logger.
-logger = new (winston.Logger)({
+var logger = global.logger = new (winston.Logger)({
     transports: transports
 });
 
@@ -60,14 +60,14 @@ if (config.pg.enabled) {
 
 // Global client
 logger.info('Connecting to irc server', config.irc.host);
-irc_client = new irc.Client(config.irc.host, config.irc.nick, {
+var irc_client = global.irc_client = new irc.Client(config.irc.host, config.irc.nick, {
     channels: config.irc.channels,
     port: config.irc.port,
     secure: config.irc.ssl
 });
 
 // Global authentication manager
-authman = new auth.AuthManager();
+var authman = global.authman = new auth.AuthManager();
 
 // Connected to IRC server
 irc_client.on('registered', function(message) {
@@ -95,7 +95,7 @@ irc_client.addListener('motd', function (motd) {
             irc_client.join(row.id);
         });
 
-        var query = pg_client.query("SELECT channel, name, value FROM channel_settings");
+        query = pg_client.query("SELECT channel, name, value FROM channel_settings");
 
         query.on('row', function(row) {
             utils.channelSetting(row.channel, row.name, row.value);
@@ -133,7 +133,7 @@ irc_client.on('invite', function(channel, from) {
 irc_client.on('kick', function(channel, user, by) {
     if (user === config.irc.realNick) {
         logger.info('Kicked from ' + channel + ' by ' + by + '.');
-        commands['bye'](user, channel);
+        commands.bye(user, channel);
     }
 });
 
@@ -183,7 +183,7 @@ irc_client.on('pm', function(user, message) {
 
 // React to users quitting the IRC server
 irc_client.on('quit', function(user) {
-    if (user == config.irc.nick) {
+    if (user === config.irc.nick) {
         irc_client.send('NICK', config.irc.nick);
     }
 });
@@ -191,7 +191,7 @@ irc_client.on('quit', function(user) {
 // Update bot's perception of its own nick, if it changes
 // (likely triggered by ping timeout of the intended nick, see above)
 irc_client.on('nick', function(oldnick, newnick, channels, message) {
-    if (oldnick == config.irc.realNick) {
+    if (oldnick === config.irc.realNick) {
         config.irc.realNick = newnick;
     }
 });
@@ -364,7 +364,7 @@ var commands = {
                     var message = ['!' + command];
 
                     if (usage !== undefined) {
-                        message.push(usage)
+                        message.push(usage);
                     }
 
                     message.push('- ' + help);
@@ -430,7 +430,7 @@ var commands = {
                     var msg;
 
                     var user_url = 'http://' + config.standup.host;
-                    if (config.standup.port != 80) {
+                    if (config.standup.port !== 80) {
                         user_url += ':' + config.standup.port;
                     }
                     user_url += '/user/' + user;
