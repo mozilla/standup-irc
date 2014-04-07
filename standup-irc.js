@@ -1,4 +1,4 @@
-var _ = require('underscore');
+var _ = require('lodash');
 var fs = require('fs');
 var irc = require('irc');
 var path = require('path');
@@ -8,33 +8,8 @@ var winston = require('winston');
 var api = require('./api');
 var auth = require('./auth');
 var utils = require('./utils');
+var config = require('./config');
 
-// Default configs
-var defaults = {
-    irc: {
-        nick: 'standup'
-    },
-    standup: {
-        port: 80
-    },
-    log: {
-        console: true,
-        file: null
-    },
-    pg: {
-        enabled: false
-    },
-    blacklist: []
-};
-
-var existsSync = fs.existsSync || path.existsSync;
-
-// Global config.
-if (existsSync('./config.json')) {
-    config = require('./config.json');
-}
-
-config = _.extend({}, defaults, config || {});
 
 var transports = [];
 if (config.log.file) {
@@ -49,6 +24,8 @@ if (config.log.console) {
 logger = new (winston.Logger)({
     transports: transports
 });
+
+logger.info('Config is', JSON.stringify(config, null, '  '));
 
 /********** PG Client **********/
 
@@ -82,6 +59,7 @@ if (config.pg.enabled) {
 /********** IRC Client **********/
 
 // Global client
+logger.info('Connecting to irc server', config.irc.host);
 irc_client = new irc.Client(config.irc.host, config.irc.nick, {
     channels: config.irc.channels,
     port: config.irc.port,
