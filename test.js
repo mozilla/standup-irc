@@ -17,8 +17,7 @@ function eq(a, b, name) {
     args = ["hello", "world"];
     expected = args;
     actual = utils.parseArgs(args);
-    eq(expected, actual, "noop")t diff
-    ;
+    eq(expected, actual, "noop");
 
     // Basic quotes - single
     args = ["one", "'two", "which", "is", "quoted'", "three"];
