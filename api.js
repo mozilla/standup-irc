@@ -4,6 +4,8 @@ var http = require('http');
 var querystring = require('querystring');
 var utils = require('./utils');
 
+var config = require('./config');
+
 exports.status = {
     /* Create a status message.
      * - `user`: The user that submitted the status.

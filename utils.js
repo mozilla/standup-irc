@@ -2,6 +2,8 @@ var _ = require('lodash');
 var http = require('http');
 var events = require('events');
 
+var config = require('./config');
+
 // Channel settings
 var channel_settings = {};
 
