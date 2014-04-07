@@ -2,3 +2,17 @@ language: node_js
 node_js:
 - '0.11'
 - '0.10'
+notifications:
+  email: false
+  irc:
+    channels:
+      - "irc.mozilla.org#standup"
+    on_success: change
+    on_failure: always
+deploy:
+  provider: heroku
+  api_key:
+    secure: YaSnbpygUzl1HCUR+jYlYsu/8fO7G1q3iA6dGiKPYIhsBWEaMBQYfghP8b6ab6+5ui+19Kn4XWqLRovgDqSKAmNTWJobuhIkWj9QWIW/SjhmbzgGY3ilsP4f4JEJtMo1gq9QID2YI580302vu+vJtO3oD4C2vf+OHoZrlrHCWAY=
+  app: rogerroger
+  on:
+    repo: mythmon/standup-irc
