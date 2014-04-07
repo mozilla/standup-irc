@@ -2,14 +2,9 @@ var _ = require('lodash');
 var fs = require('fs');
 var path = require('path');
 
+var config = require('./config');
+
 var existsSync = fs.existsSync || path.existsSync;
-
-// Global config.
-if (existsSync('./config.json')) {
-    config = require('./config.json');
-}
-
-config = _.extend({}, config || {});
 
 if (config.pg.enabled) {
     var pg = require('pg');
