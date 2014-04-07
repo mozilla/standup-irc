@@ -73,6 +73,9 @@ if (config.pg.enabled) {
         query.on('row', function(row) {
             config.blacklist.push(row.id);
         });
+    } else {
+        logger.warn('Could not get a connection to the database.');
+        config.pg.enabled = false;
     }
 }
 
@@ -338,7 +341,7 @@ var commands = {
 
     /* Tell the bot to join a channel */
     'goto': {
-        help: 'Tell the bot to join a channel.reg   ',
+        help: 'Tell the bot to join a channel.',
         usage: '<channel>',
         func: function(user, channel, message, args) {
             var join = args[0];

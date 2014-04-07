@@ -41,7 +41,7 @@ AuthManager.prototype.checkUser = function(nick) {
     var user = this._user(nick);
     process.nextTick(function() {
         if (user.auth) {
-                user.emitter.emit('authorization', true);
+            user.emitter.emit('authorization', true);
         } else {
             self._askNickserv(nick);
         }

@@ -40,6 +40,9 @@ var request = function(path, method, data, emitter, unicode) {
             } else if (res.statusCode === 301) {
                 request(res.headers.location, method, data, emitter);
             } else {
+                logger.error(options.host + ':' + options.port + options.path +
+                             ': ' + res.statusCode + ' ' +
+                             JSON.stringify(resp_data));
                 emitter.emit('error', res.statusCode, resp_data);
             }
         });
