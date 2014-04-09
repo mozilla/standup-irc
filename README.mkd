@@ -4,7 +4,7 @@ standup-irc
 Summary
 -------
 
-The irc bot to got with [Standup](https://github.com/rlr/standup).
+The irc bot to go with [Standup](https://github.com/rlr/standup).
 
 * **Code:** https://github.com/mythmon/standup-irc
 * **Issues:** https://github.com/mythmon/standup-irc/issues
@@ -29,9 +29,9 @@ Configure
 
 Next you need to configure standup-irc:
 
-    $ cp config.ini.example config.ini
+    $ cp config-sample.json config.json
 
-Now edit config.ini with your favorite editor.
+Now edit config.json with your favorite editor.
 
 There are comments in the config file regarding the various
 properties.
@@ -43,7 +43,3 @@ Run
 After you've configured it, you can run it like this:
 
     $ node standup-irc.js
-
-Alternatively, you can run this by specifying the config file explicitly:
-
-    $ node standup-irc.js --config=/path/to/config.ini
