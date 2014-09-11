@@ -149,6 +149,12 @@ var v2 = {
             emitter.emit('error', String(e));
         });
 
+        if (options.data) {
+            req.write(options.data);
+        }
+
+        req.end();
+
         return emitter;
     },
 
@@ -170,6 +176,7 @@ var v2 = {
             port: config.standup.port,
             path: url,
             method: 'POST',
+            data: data,
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'Content-Length': Buffer.byteLength(data)
