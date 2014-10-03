@@ -23,7 +23,7 @@ AuthManager.prototype.notice = function(nick, message) {
     global.logger.info('nickserv notice', message);
     var match = this.STATUSRE.exec(message);
     if (match) {
-        global.logger('STATUSRE matched');
+        global.logger.info('STATUSRE matched');
         var user_nick = match[1];
         var level = match[2];
         var user = this._user(user_nick);
