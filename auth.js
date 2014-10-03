@@ -53,6 +53,7 @@ AuthManager.prototype.checkUser = function(nick) {
 
 AuthManager.prototype._askNickserv = function(nick) {
     var msg = 'status ' + nick;
+    global.logger.info('Asking nickserv: "' + msg + '"');
     global.irc_client.say('nickserv', msg);
 };
 
