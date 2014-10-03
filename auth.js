@@ -1,6 +1,8 @@
 var _ = require('lodash');
 var events = require('events');
 
+var logger = global.logger;
+
 var AuthManager = function() {
     this.neededLevel = 2;
     this.STATUSRE = /^STATUS ([^ ]+) (\d)$ ([^ ]+)$/;
@@ -20,8 +22,10 @@ AuthManager.prototype.notice = function(nick, message) {
     if (nick !== 'nickserv') {
         return;
     }
+    logger.info('nickserv notice', message);
     var match = this.STATUSRE.exec(message);
     if (match) {
+        console.log('STATUSRE matched');
         var user_nick = match[1];
         var level = match[2];
         var user = this._user(user_nick);
