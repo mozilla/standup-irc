@@ -3,7 +3,7 @@ var events = require('events');
 
 var AuthManager = function() {
     this.neededLevel = 2;
-    this.STATUSRE = /^STATUS ([^ ]+) (\d)$/;
+    this.STATUSRE = /^STATUS ([^ ]+) (\d)$ ([^ ]+)$/;
     this.users = {};
 };
 
