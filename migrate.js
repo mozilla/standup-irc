@@ -21,6 +21,7 @@ if (config.pg.enabled) {
     }
 
     if (client) {
+        console.log('Connected, loading migrations.');
         var current = 0;
         var query = client.query("SELECT id FROM pg_migrations " +
                                  "ORDER BY id DESC LIMIT 1");
@@ -49,5 +50,7 @@ if (config.pg.enabled) {
                 client.end();
             });
         });
+    } else {
+        console.log('Could not get a connection to the DB. bailing.');
     }
 }
