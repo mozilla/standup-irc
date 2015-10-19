@@ -28,8 +28,9 @@ if (config.pg.enabled) {
                                  "ORDER BY id DESC LIMIT 1");
 
         query.on('error', function(error) {
-          error = true;
-          console.log('Error!', error);
+            error = true;
+            console.log('Error!', error);
+            client.end();
         });
 
         query.on('row', function(row) {
@@ -38,6 +39,7 @@ if (config.pg.enabled) {
 
         query.on('end', function(result) {
             if (error) {
+                client.end();
                 return;
             }
             current++;
@@ -51,11 +53,7 @@ if (config.pg.enabled) {
                 current++;
             }
 
-            query = client.query("SELECT id FROM pg_migrations LIMIT 1");
-
-            query.on('end', function(result) {
-                client.end();
-            });
+            client.end();
         });
     } else {
         console.log('Could not get a connection to the DB. bailing.');
