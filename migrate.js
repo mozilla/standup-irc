@@ -22,17 +22,24 @@ if (config.pg.enabled) {
 
     if (client) {
         console.log('Connected, loading migrations.');
+        var error = false;
         var current = 0;
         var query = client.query("SELECT id FROM pg_migrations " +
                                  "ORDER BY id DESC LIMIT 1");
 
-        query.on('error', function(error) { /* Do nothing */ });
+        query.on('error', function(error) {
+          error = true;
+          console.log('Error!', error);
+        });
 
         query.on('row', function(row) {
             current = row.id;
         });
 
         query.on('end', function(result) {
+            if (error) {
+                return;
+            }
             current++;
 
             while(existsSync('./migrations/' + current + '.js')) {
