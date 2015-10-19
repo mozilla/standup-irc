@@ -1,1 +1,1 @@
-worker: node migrate.js; node standup-irc.js
+worker: node standup-irc.js
