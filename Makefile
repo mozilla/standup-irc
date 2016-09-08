@@ -23,6 +23,9 @@ build:
 run: .docker-build
 	${DOCKERCOMPOSE} up irc
 
+lint: .docker-build
+	${DOCKERCOMPOSE} run irc ./node_modules/jshint/bin/jshint *.js
+
 shell: .docker-build
 	${DOCKERCOMPOSE} run irc bash
 
