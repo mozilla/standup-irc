@@ -502,20 +502,14 @@ var commands = {
     /* Update a user's settings */
     'update': {
         help: "Update the user's settings.",
-        usage: "<name|email|github_handle> <value> [<user>]",
+        usage: "<name|email|github_handle> <value>",
         func: function(user, channel, message, args) {
             utils.ifAuthorized(user, channel, function() {
                 var what = args[0];
                 var value = args[1];
-                var who = args[2];
-
-
-                if (!who) {
-                    who = user;
-                }
 
                 if (what && value) {
-                    var response = api.user.update(user, what, value, who);
+                    var response = api.user.update(user, what, value);
 
                     response.once('ok', function(data) {
                         irc_client.action(channel, "updates some stuff!");

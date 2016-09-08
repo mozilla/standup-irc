@@ -47,14 +47,12 @@ exports.status = {
 
 exports.user = {
     /* Update a users settings.
-     * - `nick`: The nick of the user that submitted the request.
      * - `user`: The user who's settings to change
      * - `key`: The name of the setting to be changed.
      * - `value`: The new value of the setting.
      */
-    update: function(nick, key, value, user) {
+    update: function(user, key, value) {
         var data = {
-            user: nick,
             api_key: config.standup.api_key
         };
         data[key] = value;
