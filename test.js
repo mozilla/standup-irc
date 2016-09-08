@@ -73,3 +73,5 @@ function eq(a, b, name) {
     expected = '"I like \\u03c0"';
     eq(expected, actual, "Default mode");
 })();
+
+console.log('Done!');
