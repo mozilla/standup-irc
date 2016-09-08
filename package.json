@@ -17,8 +17,7 @@
         "lodash": "^2.4.1"
     },
     "engines": {
-        "node": "4.1.1",
-        "npm": "2.14.4"
+        "node": "6.5.0"
     },
     "scripts": {
         "test": "node test.js",

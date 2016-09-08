@@ -1,7 +1,9 @@
 /* Functions to access the remote web api of a standup app. */
 var events = require('events');
 var http = require('http');
+var https = require('https');
 var querystring = require('querystring');
+var url = require('url');
 var utils = require('./utils');
 
 var config = require('./config');
@@ -122,7 +124,13 @@ var v2 = {
             emitter = new events.EventEmitter();
         }
 
-        var req = http.request(options, function(res) {
+        let urlinfo = url.parse(config.standup.url);
+        options.host = urlinfo.hostname;
+        options.port = urlinfo.port;
+        options.protocol = urlinfo.protocol;
+        var request = (options.protocol === 'https:' ? https : http).request;
+
+        var req = request(options, function(res) {
             var resp_data = "";
 
             // Read data as it comes in
@@ -144,8 +152,7 @@ var v2 = {
         });
 
         req.once('error', function(e) {
-            global.logger.error(options.host + ':' + options.port + options.path +
-                ': ' + JSON.stringify(options.data));
+            global.logger.error(JSON.stringify(options) + ': ' + String(e));
             emitter.emit('error', String(e));
         });
 
@@ -172,8 +179,6 @@ var v2 = {
         data = querystring.stringify(data);
 
         var options = {
-            host: config.standup.host,
-            port: config.standup.port,
             path: url,
             method: 'POST',
             data: data,
@@ -190,8 +195,6 @@ var v2 = {
         var url = v2._url(endpoint) + '?' + querystring.stringify(data);
 
         var options = {
-            host: config.standup.host,
-            port: config.standup.port,
             path: url,
             method: 'GET'
         };

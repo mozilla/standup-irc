@@ -1,8 +1,7 @@
 {
     "standup": {
         "api_key": "acdef12345",
-        "host": "api.website.com",
-        "port": "80"
+        "url": "http://api.website.com"
     },
     "irc": {
         "host": "irc.server.com",
