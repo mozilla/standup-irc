@@ -1,6 +1,8 @@
 var _ = require('lodash');
 var http = require('http');
+var https = require('https');
 var events = require('events');
+var url = require('url');
 
 var config = require('./config');
 
@@ -12,9 +14,11 @@ var request = function(path, method, data, emitter, unicode) {
         data = {};
     }
     var body = exports.jsonStringifyUnicode(data, unicode);
+    var urlinfo = url.parse(config.standup.url);
     var options = {
-        host: config.standup.host,
-        port: config.standup.port,
+        host: urlinfo.hostname,
+        port: urlinfo.port,
+        protocol: urlinfo.protocol,
         path: path,
         method: method,
         headers: {
@@ -23,12 +27,13 @@ var request = function(path, method, data, emitter, unicode) {
             'content-length': body.length
         }
     };
+    var request = (options.protocol === 'https:' ? https : http).request;
 
     if (emitter === undefined) {
         emitter = new events.EventEmitter();
     }
     // Make the request
-    var req = http.request(options, function(res) {
+    var req = request(options, function(res) {
         var resp_data = "";
         // Read data as it comes in
         res.on('data', function(chunk) {

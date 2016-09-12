@@ -9,6 +9,7 @@
     "strict": false,
     "undef": true,
     "unused": false,
+    "esversion": 6,
 
     "globals": {
         "require": false

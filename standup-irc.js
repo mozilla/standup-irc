@@ -414,7 +414,7 @@ var commands = {
         usage: "<project> status message",
         func: function(user, channel, message, args) {
             utils.ifAuthorized(user, channel, function() {
-                var project = null;
+                let project = null;
 
                 if (user !== channel) {
                     project = args[0];
@@ -423,17 +423,12 @@ var commands = {
                     }
                 }
 
-                var status = args.slice(1).join(' ');
-                var response = api.status.create(user, project, status);
+                let status = args.slice(1).join(' ');
+                let response = api.status.create(user, project, status);
 
                 response.once('ok', function(data) {
-                    var msg;
-
-                    var user_url = 'http://' + config.standup.host;
-                    if (config.standup.port !== 80) {
-                        user_url += ':' + config.standup.port;
-                    }
-                    user_url += '/user/' + user;
+                    let msg;
+                    let user_url = `${config.standup.url}/user/${user}/`;
 
                     if (Math.random() < 0.97) {
                         msg = 'Ok, submitted ';
