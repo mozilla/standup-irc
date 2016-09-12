@@ -374,8 +374,8 @@ var commands = {
             });
 
             irc_client.say(user, 'For everything else, please log into the ' +
-                           'Standup website at http://standu.ps/ or check ' +
-                           'the wiki page https://wiki.mozilla.org/Standup ' +
+                           'Standup website at ' + config['standup']['website'] + ' ' +
+                           'or check the wiki page at ' + config['standup']['help_page'] + ' ' +
                            'for instructions.');
         }
     },

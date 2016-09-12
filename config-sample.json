@@ -1,7 +1,9 @@
 {
     "standup": {
         "api_key": "acdef12345",
-        "url": "http://api.website.com"
+        "url": "http://api.website.com",
+        "website": "http://stanu.ps",
+        "help_page": "https://wiki.mozilla.org/Standup"
     },
     "irc": {
         "host": "irc.server.com",
