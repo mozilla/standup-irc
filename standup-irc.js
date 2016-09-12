@@ -372,6 +372,11 @@ var commands = {
                     irc_client.say(user, message.join(' '));
                 }
             });
+
+            irc_client.say(user, 'For everything else, please log into the ' +
+                           'Standup website at http://standu.ps/ or check ' +
+                           'the wiki page https://wiki.mozilla.org/Standup ' +
+                           'for instructions.');
         }
     },
 
