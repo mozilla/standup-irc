@@ -12,7 +12,9 @@ var defaults = {
         nick: 'standup'
     },
     standup: {
-        port: 80
+        port: 80,
+        website: 'NOSITE',
+        help_page: 'NOHELP'
     },
     log: {
         console: true,

@@ -1,0 +1,15 @@
+# docker-compose for antenna that creates a minimal collector.
+#
+# Note: Requires docker 1.10.0+ and docker-compose 1.6.0+.
+version: "2"
+services:
+  irc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - log.console=true
+      - log.file=null
+    volumes:
+      - .:/app
+    command: node standup-irc.js

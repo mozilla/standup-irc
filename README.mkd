@@ -43,3 +43,11 @@ Run
 After you've configured it, you can run it like this:
 
     $ node standup-irc.js
+
+
+Test
+----
+
+Run the tests, yo!
+
+    $ node test.js
