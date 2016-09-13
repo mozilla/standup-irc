@@ -1,5 +1,3 @@
-DOCKERCOMPOSE = $(shell which docker-compose)
-
 default: help
 	@echo ""
 	@echo "You need to specify a subcommand."
@@ -16,24 +14,29 @@ help:
 	${MAKE} build
 
 build:
-	-rm .docker-build
-	${DOCKERCOMPOSE} -f docker-compose.yml build irc
+	docker build -t standup_irc .
 	touch .docker-build
 
 run: .docker-build
-	${DOCKERCOMPOSE} up irc
+	docker run --env-file .env_dev -v "$PWD:/app" standup_irc
 
 lint: .docker-build
-	${DOCKERCOMPOSE} run irc ./node_modules/jshint/bin/jshint *.js
+	docker run --env-file .env_dev -v "$PWD:/app" standup_irc jshint *.js
 
 shell: .docker-build
-	${DOCKERCOMPOSE} run irc bash
+	docker run -it --env-file .env_dev -v "$PWD:/app" standup_irc bash
 
 clean:
 	-rm -rf node_modules/
 	-rm -f .docker-build*
 
 test: .docker-build
-	${DOCKERCOMPOSE} run irc node test.js
+	docker run --env-file .env_dev -v "$PWD:/app" standup_irc node test.js
 
-.PHONY: default clean build run shell test
+test-image: .docker-build
+	docker run --env-file .env_dev standup_irc node test.js
+
+lint-image: .docker-build
+	docker run --env-file .env_dev standup_irc jshint *.js
+
+.PHONY: default clean build run shell test test-image lint-image
