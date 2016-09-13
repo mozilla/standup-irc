@@ -5,7 +5,7 @@ case "$1" in
     # Save built images to Travis cache directory
     if [[ "${TRAVIS_PULL_REQUEST}" == "false" ]] && [[ "${TRAVIS_BRANCH}" == "master" ]]; then
       mkdir -p $(dirname "${DOCKER_CACHE_FILE}")
-      docker save $(docker history -q local/standup_dev | grep -v '<missing>') | \
+      docker save $(docker history -q standup_irc | grep -v '<missing>') | \
              gzip > "${DOCKER_CACHE_FILE}"
     fi
     ;;

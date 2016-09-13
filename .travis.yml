@@ -11,7 +11,6 @@ cache:
     - /home/travis/docker/
 before_install:
   - docker -v
-  - docker-compose -v
   - echo "ENV GIT_SHA ${TRAVIS_COMMIT}" >> Dockerfile
   - bin/travis-docker-cache.sh load
 install: make build
@@ -19,6 +18,17 @@ script:
   - make lint-image
   - make test-image
   - bin/travis-docker-cache.sh save
+deploy:
+  - provider: script
+    script: bin/deploy.sh stage
+    on:
+      branch: master
+      repo: mozilla/standup-irc
+  - provider: script
+    script: bin/deploy.sh prod
+    on:
+      tags: true
+      repo: mozilla/standup-irc
 notifications:
   email: false
   irc:
