@@ -1,8 +1,6 @@
-standup-irc
-===========
+# standup-irc
 
-Summary
--------
+## Summary
 
 The irc bot to go with [Standup](https://github.com/rlr/standup).
 
@@ -11,21 +9,29 @@ The irc bot to go with [Standup](https://github.com/rlr/standup).
 * **License:** BSD
 
 
-Install
--------
+## Install
 
 Clone the repository:
 
     $ git clone https://github.com/mythmon/standup-irc
     $ cd standup-irc
+    
+### Docker
 
-Get the dependencies:
+If you have Docker setup then you can use that to run the bot:
+
+    $ make run
+
+This will build the docker image and run the service.
+
+### Local
+
+If you don't have Docker you can use a local nodejs environment to get the dependencies:
 
     $ npm install .
 
 
-Configure
----------
+## Configure
 
 Next you need to configure standup-irc:
 
@@ -33,21 +39,24 @@ Next you need to configure standup-irc:
 
 Now edit config.json with your favorite editor.
 
-There are comments in the config file regarding the various
-properties.
+There are comments in the config file regarding the various properties.
 
+If you're using Docker you can also use a `.env` file to define environment
+variables that the bot can use instead of the `config.json` file.
 
-Run
----
+## Run
 
 After you've configured it, you can run it like this:
 
-    $ node standup-irc.js
+    $ npm start
 
 
-Test
-----
+## Test
 
 Run the tests, yo!
 
-    $ node test.js
+    $ npm test
+
+Or with Docker it would be:
+
+    $ make test
