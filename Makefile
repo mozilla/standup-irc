@@ -1,4 +1,5 @@
-DOCKERCOMPOSE = $(shell which docker-compose)
+DOCKER_IMG = standup_irc
+DOCKER = $(shell which docker)
 
 default: help
 	@echo ""
@@ -6,34 +7,45 @@ default: help
 	@exit 1
 
 help:
-	@echo "build         - build docker containers for dev"
-	@echo "run           - docker-compose up the entire system for dev"
+	@echo "build         - build docker image for dev"
+	@echo "run           - docker run the bot for dev"
 	@echo ""
-	@echo "clean         - remove all build, test, coverage and Python artifacts"
+	@echo "clean         - remove all build, test, coverage and nodejs artifacts"
+	@echo "shell         - open a bash shell in the docker container"
 	@echo "test          - run tests against local files"
+	@echo "lint          - run jshint against local files"
+	@echo "test-image    - run tests in the docker image"
+	@echo "lint-image    - run jshint in the docker image"
 
 .docker-build:
 	${MAKE} build
 
 build:
-	-rm .docker-build
-	${DOCKERCOMPOSE} -f docker-compose.yml build irc
+	-rm -f .docker-build
+	${DOCKER} build -t ${DOCKER_IMG} .
 	touch .docker-build
+	touch .env
 
 run: .docker-build
-	${DOCKERCOMPOSE} up irc
+	${DOCKER} run --env-file .env_dev --env-file .env -v "$PWD:/app" ${DOCKER_IMG}
 
 lint: .docker-build
-	${DOCKERCOMPOSE} run irc ./node_modules/jshint/bin/jshint *.js
+	${DOCKER} run --env-file .env_dev --env-file .env -v "$PWD:/app" ${DOCKER_IMG} jshint *.js
 
 shell: .docker-build
-	${DOCKERCOMPOSE} run irc bash
+	${DOCKER} run -it --env-file .env_dev --env-file .env -v "$PWD:/app" ${DOCKER_IMG} bash
 
 clean:
 	-rm -rf node_modules/
 	-rm -f .docker-build*
 
 test: .docker-build
-	${DOCKERCOMPOSE} run irc node test.js
+	${DOCKER} run --env-file .env_dev --env-file .env -v "$PWD:/app" ${DOCKER_IMG} node test.js
 
-.PHONY: default clean build run shell test
+test-image: .docker-build
+	${DOCKER} run --env-file .env_dev --env-file .env ${DOCKER_IMG} node test.js
+
+lint-image: .docker-build
+	${DOCKER} run --env-file .env_dev --env-file .env ${DOCKER_IMG} jshint *.js
+
+.PHONY: default clean build run shell test test-image lint-image
