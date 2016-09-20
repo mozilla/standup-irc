@@ -2,10 +2,10 @@
 
 ## Summary
 
-The irc bot to go with [Standup](https://github.com/rlr/standup).
+The irc bot to go with [Standup](https://github.com/mozilla/standup).
 
-* **Code:** https://github.com/mythmon/standup-irc
-* **Issues:** https://github.com/mythmon/standup-irc/issues
+* **Code:** https://github.com/mozilla/standupirc
+* **Issues:** https://github.com/mozilla/standup-irc/issues
 * **License:** BSD
 
 
@@ -13,7 +13,7 @@ The irc bot to go with [Standup](https://github.com/rlr/standup).
 
 Clone the repository:
 
-    $ git clone https://github.com/mythmon/standup-irc
+    $ git clone https://github.com/mozilla/standup-irc
     $ cd standup-irc
     
 ### Docker
