@@ -432,15 +432,8 @@ var commands = {
                 let response = api.status.create(user, project, status);
 
                 response.once('ok', function(data) {
-                    let msg;
                     let user_url = `${config.standup.url}/user/${user}/`;
-
-                    if (Math.random() < 0.97) {
-                        msg = 'Ok, submitted ';
-                    } else {
-                        msg = 'Okeeday, meesa submittin ';
-                    }
-                    msg += 'status #' + data.id + ' for ' + user_url;
+                    let msg = `Ok, submitted #${data.id} for ${user_url}`;
                     utils.talkback(channel, user, msg);
                 });
 
