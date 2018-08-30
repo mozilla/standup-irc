@@ -433,7 +433,7 @@ var commands = {
 
                 response.once('ok', function(data) {
                     let user_url = `${config.standup.url}/user/${user}/`;
-                    let msg = `Ok, submitted #${data.id} for ${user_url}`;
+                    let msg = `Ok, submitted #${data.id} for ${user_url} . FYI, Standups is shutting down. See website for details.`;
                     utils.talkback(channel, user, msg);
                 });
 
