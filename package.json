@@ -11,7 +11,7 @@
         "url": "https://github.com/mythmon/standup-irc.git"
     },
     "dependencies": {
-        "irc": ">=0.3.4",
+        "irc": "^0.3.4",
         "pg": "^0.7.2",
         "winston": "^0.6.2",
         "lodash": "^2.4.1"
